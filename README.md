@@ -17,6 +17,7 @@ Dva týmy soutěží o nejlepší model, hodnocený **medicínsky relevantní me
 | `prepare_features_INSTRUCTOR.ipynb` | školitel | volitelně: jak featury vznikly (referenční, na Colab GPU) |
 | `score_submission_INSTRUCTOR.py` | školitel | vyhodnotí odevzdání týmů a vyhlásí vítěze |
 | `main.tex` / `main_en.tex` (+ `refs.bib`, `figs/`) | **studenti** | šablona reportu (LaTeX/Overleaf) v češtině i angličtině: problém, řešení ResNet50 + k-NN, vyhodnocení — k přepsání podle vlastního řešení. Bibliografie v `refs.bib` (BibTeX). |
+| `prezentace.html` | školitel | úvodní prezentace (self-contained HTML, otevře se v prohlížeči): představení, problém, CNN/ResNet, PCA featur, k-NN, MLP. Navigace šipkami. |
 | `tools/extract_features_local.py` | školitel | lokální generátor datových souborů (běží i na Apple MPS) |
 | `tools/build_notebooks.py` | školitel | znovu vygeneruje oba `.ipynb` po úpravách |
 | `README.md` | — | tenhle návod |
