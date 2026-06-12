@@ -1,0 +1,21 @@
+# Datové soubory — distribuují se jako GitHub Release (data-v1), ne v repu
+*.npz
+samples.zip
+samples/
+cell_images/
+cell_images.zip
+_data/
+
+# test_labels.npz je scoring klíč — NIKDY ho neukládat do (potenciálně veřejného) repa
+# (pokrývá ho i *.npz výše, uvedeno explicitně pro jistotu)
+test_labels.npz
+
+# Odevzdání a výstupy soutěže
+predikce_*.csv
+vysledky_soutez.png
+
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
