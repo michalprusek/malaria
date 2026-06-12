@@ -79,7 +79,7 @@ notebooku **bez grafické karty** — během pár sekund.
 
 1. Podíváte se na skutečné snímky buněk.
 2. Pochopíte, jak ResNet promění obrázek na **2048 čísel** (tzv. *featury*).
-3. **Navrhnete a natrénujete vlastní klasifikační hlavu.**
+3. Postavíte jednoduchý **baseline (k-NN)** a pak ho překonáte **vlastní natrénovanou sítí.**
 4. Naučíte se, proč v medicíně **nestačí hlásit „95 % přesnost"** — a co je *senzitivita*,
    *specificita* a *matice záměn*.
 5. **Soutěž!** Dva týmy proti sobě. Vyhrává model, který nejlépe zachytí nemocné, aniž by
@@ -327,7 +327,9 @@ student.append(md(r"""
 ## 4 · Standardizace featur
 
 Drobný, ale užitečný krok. Různé featury mají různě velké hodnoty. Když je všechny převedeme
-na společné měřítko (průměr 0, rozptyl 1), neuronová síť se učí rychleji a stabilněji.
+na společné měřítko (průměr 0, rozptyl 1), pomůže to **oběma** modelům, které za chvíli
+postavíme: k-NN (počítá vzdálenosti — ty dávají smysl jen při srovnatelném měřítku) i
+neuronové síti (učí se rychleji a stabilněji).
 
 > ⚠️ Důležité pravidlo: měřítko spočítáme **jen z trénovacích dat** (`fit`) a stejné měřítko
 > pak použijeme na ověřovací i testovací data (`transform`). Jinak bychom „nakoukli" do dat,
@@ -349,11 +351,41 @@ print("připraveno:", Xtr.shape, "na zařízení", device)
 """))
 
 student.append(md(r"""
-## 5 · Vaše vlastní klasifikační hlava 🔬
+## 5 · Baseline: k nejbližších sousedů (k-NN)
 
-Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**. Dostane na vstupu 2048
-featur a na výstupu vydá jediné číslo (*logit*), které po převedení funkcí *sigmoid* říká
-**pravděpodobnost, že je buňka napadená**.
+Než navrhneme vlastní síť, postavíme **co nejjednodušší model** — laťku, kterou se pak budeme
+snažit překonat. Použijeme **k-NN** (*k nearest neighbors*, k nejbližších sousedů):
+
+> Chceš zařadit novou buňku? Najdi mezi trénovacími buňkami **k nejpodobnějších** (nejbližších
+> v prostoru featur) a nech je **hlasovat**. Bližší sousedé váží víc. Podíl hlasů pro
+> „napadená" bereme jako **pravděpodobnost**.
+
+Zvláštnost k-NN: **vůbec se netrénuje** — jen si zapamatuje trénovací data a při dotazu počítá
+vzdálenosti. Právě proto je dobrý jako výchozí bod. Uvidíme ale i jeho slabinu: ve **2048
+rozměrech** přestávají být vzdálenosti spolehlivé (tzv. *prokletí dimenzionality*), takže k-NN
+tady nebude žádný přeborník — a to je pro nás dobře, bude co překonávat.
+"""))
+
+student.append(code(r"""
+from sklearn.neighbors import KNeighborsClassifier
+
+K = 31    # 🔬 EXPERIMENT (lite): kolik sousedů hlasuje (zkuste 5, 15, 51…)
+
+knn = KNeighborsClassifier(n_neighbors=K, weights="distance", n_jobs=-1)
+knn.fit(X_train_s, y_train)                       # "trénink" = jen si zapamatuje data
+knn_val_prob = knn.predict_proba(X_val_s)[:, 1]   # pravděpodobnost "napadená"
+
+knn_acc = ((knn_val_prob > 0.5).astype(int) == y_val).mean()
+print(f"k-NN baseline — přesnost na ověření: {knn_acc:.4f}")
+print("To je laťka. V dalších sekcích ji zkusíme překonat vlastní neuronovou sítí.")
+"""))
+
+student.append(md(r"""
+## 6 · Vaše vlastní klasifikační hlava 🔬
+
+Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**, která má překonat k-NN
+baseline. Dostane na vstupu 2048 featur a na výstupu vydá jediné číslo (*logit*), které po
+převedení funkcí *sigmoid* říká **pravděpodobnost, že je buňka napadená**.
 
 Baseline níže má jednu skrytou vrstvu. **Tady experimentujte:**
 - `hidden` — kolik neuronů má skrytá vrstva (víc = větší kapacita, ale i riziko přeučení),
@@ -382,7 +414,7 @@ print("počet trénovaných vah:", sum(p.numel() for p in model.parameters()))
 """))
 
 student.append(md(r"""
-## 6 · Trénink 🔬
+## 7 · Trénink 🔬
 
 Trénink znamená: model hádá, porovnáme jeho odhad se správnou odpovědí, spočítáme **chybu**
 (*loss*) a malými krůčky vahy upravíme, aby chyba klesala. Jeden průchod všemi daty = jedna
@@ -394,7 +426,7 @@ Páky, se kterými si můžete hrát:
 - `WEIGHT_DECAY` — mírná penalizace velkých vah, brání přeučení,
 - `POS_WEIGHT` — **jak draho stojí přehlédnutý nemocný**. Hodnota > 1 nutí model brát napadené
   buňky vážněji (zvýší senzitivitu na úkor falešných poplachů). To je přímo páka na medicínský
-  kompromis, o kterém bude řeč v sekci 7!
+  kompromis, o kterém bude řeč v sekci 8!
 """))
 
 student.append(code(r"""
@@ -444,7 +476,7 @@ plt.tight_layout(); plt.show()
 """))
 
 student.append(md(r"""
-## 7 · Proč v medicíně nestačí „95 % přesnost" 🩺
+## 8 · Proč v medicíně nestačí „95 % přesnost" 🩺
 
 Představte si model, který o **každé** buňce řekne „zdravá". Když je v nátěru 95 % buněk
 zdravých, má tenhle hloupý model rovnou **95 % přesnost** — a přitom **nezachytí ani jednoho
@@ -516,17 +548,23 @@ def senzitivita_pri_specificite(y_true, y_prob, min_spec=0.95):
 fpr, tpr, thr = roc_curve(y_val, val_prob)
 sens95, prah95, spec95 = senzitivita_pri_specificite(y_val, val_prob, 0.95)
 
+# k-NN baseline pro srovnání
+fpr_k, tpr_k, _ = roc_curve(y_val, knn_val_prob)
+sens95_knn, _, _ = senzitivita_pri_specificite(y_val, knn_val_prob, 0.95)
+
 plt.figure(figsize=(6, 6))
-plt.plot(fpr, tpr, lw=2, label="ROC křivka")
-plt.axvline(0.05, ls="--", color="gray", label="hranice 5 % falešných poplachů")
-plt.scatter([1 - spec95], [sens95], color="crimson", zorder=5,
-            label=f"náš bod: senzitivita={sens95:.3f}")
+plt.plot(fpr, tpr, lw=2, label=f"vaše síť (sens={sens95:.3f})")
+plt.plot(fpr_k, tpr_k, lw=2, ls="--", color="gray", label=f"k-NN baseline (sens={sens95_knn:.3f})")
+plt.axvline(0.05, ls=":", color="crimson", label="hranice 5 % falešných poplachů")
+plt.scatter([1 - spec95], [sens95], color="crimson", zorder=5)
 plt.plot([0, 1], [0, 1], ls=":", color="lightgray")
 plt.xlabel("1 − specificita  (falešné poplachy)"); plt.ylabel("senzitivita")
-plt.title("ROC křivka"); plt.legend(loc="lower right"); plt.show()
+plt.title("ROC křivka — vaše síť vs. baseline"); plt.legend(loc="lower right"); plt.show()
 
 print(f"➡️  SOUTĚŽNÍ SKÓRE (na ověření): senzitivita @ spec≥95 % = {sens95:.3f}")
 print(f"    (odpovídající práh = {prah95:.3f}, dosažená specificita = {spec95:.3f})")
+print(f"    k-NN baseline = {sens95_knn:.3f}  →  "
+      f"{'PŘEKONÁNO! 🎉' if sens95 > sens95_knn else 'zatím ne — laďte dál'}")
 """))
 
 student.append(md(r"""
@@ -555,21 +593,22 @@ except Exception as e:
 """))
 
 student.append(md(r"""
-## 8 · Ladění pro soutěž 🔬🏆
+## 9 · Ladění pro soutěž 🔬🏆
 
 Teď zpátky nahoru a vylepšujte! Cílem je co **nejvyšší senzitivita při specificitě ≥ 95 %**
-na skrytém testu. Páky, které máte k dispozici:
+na skrytém testu (a samozřejmě překonat k-NN baseline). Páky, které máte k dispozici:
 
 | kde | páka | co zkusit |
 |---|---|---|
-| sekce 5 | architektura hlavy | větší `hidden`, jiný `dropout`, další vrstvy |
-| sekce 6 | `EPOCHS` | víc epoch — ale pozor na přeučení (sledujte ověření) |
-| sekce 6 | `LR` | např. 3e-4, 1e-3, 3e-3 |
-| sekce 6 | `WEIGHT_DECAY` | větší hodnota brzdí přeučení |
-| sekce 6 | `POS_WEIGHT` | > 1 zvýší senzitivitu (přísnější na nemocné) |
+| sekce 5 | `K` u k-NN | jiný počet sousedů — posune baseline (zkuste, jestli k-NN vůbec dotáhnete) |
+| sekce 6 | architektura hlavy | větší `hidden`, jiný `dropout`, další vrstvy |
+| sekce 7 | `EPOCHS` | víc epoch — ale pozor na přeučení (sledujte ověření) |
+| sekce 7 | `LR` | např. 3e-4, 1e-3, 3e-3 |
+| sekce 7 | `WEIGHT_DECAY` | větší hodnota brzdí přeučení |
+| sekce 7 | `POS_WEIGHT` | > 1 zvýší senzitivitu (přísnější na nemocné) |
 | sekce 4 | standardizace | už zapnutá — zkuste, jaký je rozdíl bez ní |
 
-**Postup:** změňte jednu věc → spusťte sekce 5, 6, 7 → podívejte se na soutěžní skóre →
+**Postup:** změňte jednu věc → spusťte sekce 6, 7, 8 → podívejte se na soutěžní skóre →
 opakujte. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
 
 > 💡 Tip: nejde jen o přesnost. Když model dělá hodně falešných poplachů, „dojde mu rozpočet"
@@ -578,7 +617,7 @@ opakujte. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
 """))
 
 student.append(md(r"""
-## 9 · Odevzdání do soutěže 📤
+## 10 · Odevzdání do soutěže 📤
 
 Až budete s modelem spokojení, vygenerujte odevzdání. Spočítáme pravděpodobnosti na **skrytém
 testu** (u kterého neznáte správné odpovědi) a uložíme je do souboru `predikce_<TÝM>.csv`.
@@ -617,6 +656,9 @@ student.append(md(r"""
 - **Transfer learning**: stačí dotrénovat malou hlavu nad zmraženým ResNetem — žádné
   superpočítače, žádné miliony obrázků.
 - Featury jsou **2048 čísel**, do kterých předtrénovaná síť zhustila „co na obrázku je".
+- **Baseline vs. učení**: k-NN si data jen pamatuje a ve 2048 rozměrech tápe; trénovaná síť se
+  naučí, na čem záleží — proto baseline výrazně překoná. (Dobrý baseline ale vždy chcete mít,
+  abyste věděli, co váš model vlastně přidává.)
 - **Přesnost klame.** V medicíně sledujeme **senzitivitu** (nepřehlédnout nemocného) a
   **specificitu** (nestrašit zdravé), čteme **matici záměn** a **ROC křivku**.
 - **Práh** je rozhodnutí o ceně chyby — a ta cena není symetrická.

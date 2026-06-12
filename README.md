@@ -119,11 +119,13 @@ kompromis.
 
 ## 🔬 Páky, se kterými studenti experimentují
 
-V notebooku jsou vyznačené komentářem `# 🔬 EXPERIMENT`:
+Notebook staví **k-NN baseline (sekce 5)** a pak ho studenti překonávají **vlastní
+neuronovou hlavou**. Páky vyznačené `# 🔬 EXPERIMENT`:
 
-- **architektura hlavy** (sekce 5): počet a šířka vrstev, `dropout`,
-- **`EPOCHS`, `LR`, `WEIGHT_DECAY`** (sekce 6): délka a tempo učení, regularizace,
-- **`POS_WEIGHT`** (sekce 6): jak draho stojí přehlédnutý nemocný — přímá páka na senzitivitu,
+- **`K` u k-NN** (sekce 5): počet hlasujících sousedů — posune baseline,
+- **architektura hlavy** (sekce 6): počet a šířka vrstev, `dropout`,
+- **`EPOCHS`, `LR`, `WEIGHT_DECAY`** (sekce 7): délka a tempo učení, regularizace,
+- **`POS_WEIGHT`** (sekce 7): jak draho stojí přehlédnutý nemocný — přímá páka na senzitivitu,
 - **standardizace featur** (sekce 4): zapnutá; lze ukázat rozdíl bez ní.
 
 Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co pomohlo.
@@ -149,9 +151,11 @@ Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co
   ukládáno jako `float16` (komprimované `.npz`: train 54 MB + val 12 MB + test 12 MB ≈ 78 MB).
 - **Split**: stratifikovaný 70 / 15 / 15 (train 19 289, val 4 135, test 4 134), pevný seed 42,
   **deterministické pořadí obrázků** (řazeno podle názvu souboru → stejný split na každém stroji).
-- **Hlava**: malá MLP v PyTorch, `BCEWithLogitsLoss`, optimalizátor Adam.
-- **Referenční baseline na reálných datech**: ~94 % přesnost na ověření a **senzitivita ≈ 0,92
-  při specificitě 95 %**. Studenti tedy mají reálně kam model zlepšovat (cíl: blíž k 0,95+).
+- **Baseline = k-NN** (k=31, vážený vzdáleností, na standardizovaných featurech): na reálných
+  datech ~80 % přesnost a **senzitivita ≈ 0,73 @ spec 95 %** — záměrně slabší (prokletí
+  dimenzionality ve 2048 rozměrech), aby měli studenti co překonávat.
+- **Trénovaná hlava** (malá MLP v PyTorch, `BCEWithLogitsLoss`, Adam): ~94 % přesnost a
+  **senzitivita ≈ 0,92 @ spec 95 %** — výrazně překoná baseline, cíl je tlačit k 0,95+.
 - Notebooky i scoring byly otestovány spuštěním end-to-end; featury byly extrahovány a
   ověřeny na reálných datech.
 - Augmentace dat zde nelze (featury jsou fixní) — vhodné téma na diskusi „co s plnými obrázky".
