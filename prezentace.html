@@ -61,6 +61,9 @@ strong{color:#fff;font-weight:600}
 .chip{font-family:var(--mono);font-size:.8rem;border:1px solid var(--line);border-radius:999px;
   padding:.5em 1em;color:var(--muted);background:rgba(255,255,255,.02)}
 .chip b{color:var(--ink);font-weight:500}
+.role{font-family:var(--mono);font-size:.82rem;color:var(--teal);letter-spacing:.04em;margin-top:.3rem}
+.teamnote{margin-top:1.5rem;text-align:center;color:var(--muted);font-size:1.02rem;max-width:none}
+.card .list li{font-size:1rem}
 
 .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,64px);align-items:center}
 @media(max-width:820px){.grid2{grid-template-columns:1fr;gap:28px}}
@@ -141,38 +144,36 @@ strong{color:#fff;font-weight:600}
       <p class="lead reveal" style="--i:2;margin-top:1.2rem">Hluboké učení v diagnostice z mikroskopu — od pixelů buňky k rozhodnutí, které může zachránit život.</p>
       <div class="chips reveal" style="--i:3">
         <span class="chip"><b>Michal Průšek</b></span>
-        <span class="chip">ÚTIA AV ČR</span>
-        <span class="chip">PhD · FJFI ČVUT</span>
-        <span class="chip">biomedicínská segmentace</span>
+        <span class="chip"><b>Michal Bělohlávek</b></span>
+        <span class="chip">školitelé · FJFI ČVUT</span>
       </div>
     </div>
   </section>
 
-  <!-- 2 KDO JSEM -->
+  <!-- 2 ŠKOLITELÉ (sdílený slide) -->
   <section class="slide">
-    <div class="wrap grid2">
-      <div>
-        <div class="kicker reveal" style="--i:0">Kdo vás provede</div>
-        <h2 class="reveal" style="--i:1">Michal Průšek</h2>
-        <ul class="list">
-          <li class="reveal" style="--i:2"><span><strong>PhD student</strong> na FJFI ČVUT (Fakulta jaderná a fyzikálně inženýrská).</span></li>
-          <li class="reveal" style="--i:3"><span>Výzkumník na <strong>ÚTIA AV ČR</strong> — Ústavu teorie informace a automatizace Akademie věd.</span></li>
-          <li class="reveal" style="--i:4"><span>Věnuji se <strong>biomedicínské segmentaci</strong> obrazu — učím počítače rozpoznávat buňky, organoidy a struktury v mikroskopických snímcích.</span></li>
-          <li class="reveal" style="--i:5"><span>Dnes si na malárii ukážeme, jak se z téhle vědy stane <span class="teal">funkční nástroj</span>.</span></li>
-        </ul>
-      </div>
-      <div class="reveal" style="--i:3">
-        <div class="card">
-          <h3>Co dnes zvládneme</h3>
-          <ul class="list" style="margin-top:.6rem">
-            <li>Pochopíme problém i data</li>
-            <li>Rozebereme síť <span class="tt">ResNet</span></li>
-            <li>Postavíme baseline <span class="tt">k-NN</span></li>
-            <li>Uvidíme, jak featury <span class="teal">samy</span> oddělují třídy</li>
-            <li>Překonáme baseline <span class="tt">MLP</span></li>
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Kdo vás provede</div>
+      <h2 class="reveal" style="--i:1">Dva školitelé, společný základ</h2>
+      <div class="grid2" style="margin-top:.4rem">
+        <div class="card reveal" style="--i:2">
+          <h3>Michal Průšek</h3>
+          <div class="role">PhD · FJFI ČVUT &nbsp;·&nbsp; ÚTIA AV ČR</div>
+          <ul class="list" style="margin-top:.8rem">
+            <li><span>Výzkum na <strong>ÚTIA AV ČR</strong> (Ústav teorie informace a automatizace).</span></li>
+            <li><span><strong>Biomedicínská segmentace</strong> — učí počítače rozpoznávat buňky a struktury v mikroskopii.</span></li>
+          </ul>
+        </div>
+        <div class="card reveal" style="--i:3">
+          <h3>Michal Bělohlávek</h3>
+          <div class="role">PhD · CIIRC ČVUT &nbsp;·&nbsp; Cisco</div>
+          <ul class="list" style="margin-top:.8rem">
+            <li><span><strong>Software Engineer v Cisco</strong> — detekce e-mailových hrozeb pomocí embeddingů.</span></li>
+            <li><span>PhD na <strong>CIIRC</strong> (Formal Methods Group) — <strong>kontinuální učení</strong> v modelech pro uvažování (LLM reasoning).</span></li>
           </ul>
         </div>
       </div>
+      <p class="reveal teamnote" style="--i:4">Spolužáci z oboru <strong>Aplikované matematicko-stochastické metody</strong> (Ing.) na FJFI ČVUT — odtud společná vášeň pro matematiku a strojové učení.</p>
     </div>
   </section>
 
@@ -407,8 +408,8 @@ strong{color:#fff;font-weight:600}
         </ul>
         <div class="reveal" style="--i:4">
           <div class="card">
-            <h3>Děkuji za pozornost</h3>
-            <p style="font-size:1rem">Michal Průšek · ÚTIA AV ČR · FJFI ČVUT</p>
+            <h3>Děkujeme za pozornost</h3>
+            <p style="font-size:1rem">Michal Průšek &amp; Michal Bělohlávek<br><span style="color:#93a1b3">ÚTIA AV ČR · CIIRC · FJFI ČVUT</span></p>
             <p class="foot">Materiály a notebook:<br><span class="teal">github.com/michalprusek/malaria</span></p>
           </div>
         </div>
