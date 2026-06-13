@@ -15,6 +15,7 @@ from PIL import Image
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.metrics import roc_curve, confusion_matrix, roc_auc_score
 
 TEAL = "#35d6c0"
@@ -59,17 +60,19 @@ Xte, yte = te["X"].astype(np.float32), tl["y"]
 sc = StandardScaler().fit(Xtr)
 Xtr_s, Xte_s = sc.transform(Xtr), sc.transform(Xte)
 
-# ---------- PCA projekce featur (2D) ----------
-idx = np.random.choice(len(Xtr), 4000, replace=False)
-pts = PCA(n_components=2).fit_transform(Xtr_s[idx])
+# ---------- t-SNE projekce featur (2D) — silnější nelineární separace ----------
+idx = np.random.choice(len(Xtr), 3000, replace=False)
+pre = PCA(n_components=50).fit_transform(Xtr_s[idx])          # předredukce kvůli rychlosti
+pts = TSNE(n_components=2, perplexity=30, init="pca", random_state=42).fit_transform(pre)
 yy = ytr[idx]
 fig, ax = plt.subplots(figsize=(7.4, 5.4))
-ax.scatter(pts[yy == 0, 0], pts[yy == 0, 1], s=9, alpha=0.40, c=TEAL, label="zdravá", edgecolors="none")
-ax.scatter(pts[yy == 1, 0], pts[yy == 1, 1], s=9, alpha=0.40, c=CRIMSON, label="napadená", edgecolors="none")
-ax.set_xlabel("hlavní komponenta 1"); ax.set_ylabel("hlavní komponenta 2")
+ax.scatter(pts[yy == 0, 0], pts[yy == 0, 1], s=9, alpha=0.45, c=TEAL, label="zdravá", edgecolors="none")
+ax.scatter(pts[yy == 1, 0], pts[yy == 1, 1], s=9, alpha=0.45, c=CRIMSON, label="napadená", edgecolors="none")
+ax.set_xlabel("t-SNE 1"); ax.set_ylabel("t-SNE 2")
 leg = ax.legend(loc="upper right", frameon=False, fontsize=12)
 for t in leg.get_texts(): t.set_color(INK)
 style_axes(ax)
+ax.grid(False); ax.set_xticks([]); ax.set_yticks([])         # osy t-SNE nemají jednotky
 PCA_B64 = fig_to_b64(fig)
 
 # ---------- k-NN + ROC ----------
@@ -201,12 +204,15 @@ strong{color:#fff;font-weight:600}
 .role{font-family:var(--mono);font-size:.82rem;color:var(--teal);letter-spacing:.04em;margin-top:.3rem}
 .teamnote{margin-top:1.5rem;text-align:center;color:var(--muted);font-size:1.02rem;max-width:none}
 .card .list li{font-size:1rem}
+.presenters h3{font-size:2rem}
+.presenters .role{font-size:1rem}
+.presenters .card .list li{font-size:1.2rem}
 
 .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(24px,4vw,64px);align-items:center}
 @media(max-width:820px){.grid2{grid-template-columns:1fr;gap:28px}}
 
-.bignum{font-family:var(--serif);font-weight:900;font-size:clamp(3.6rem,11vw,8rem);
-  line-height:.9;background:linear-gradient(180deg,#fff,var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+.bignum{font-family:var(--serif);font-weight:900;font-size:clamp(3rem,8vw,6.4rem);
+  line-height:.9;white-space:nowrap;background:linear-gradient(180deg,#fff,var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
 .list{list-style:none;display:flex;flex-direction:column;gap:.85rem;margin-top:1.2rem}
 .list li{display:flex;gap:.8rem;align-items:flex-start;color:#cdd8e3;font-size:1.08rem;line-height:1.45}
 .list li::before{content:"";flex:none;width:9px;height:9px;margin-top:.55em;border-radius:50%;
@@ -288,7 +294,7 @@ strong{color:#fff;font-weight:600}
   </section>
 
   <!-- 2 ŠKOLITELÉ (sdílený slide) -->
-  <section class="slide">
+  <section class="slide presenters">
     <div class="wrap">
       <div class="kicker reveal" style="--i:0">Kdo vás provede</div>
       <h2 class="reveal" style="--i:1">Dva školitelé, společný základ</h2>
@@ -371,37 +377,142 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
-  <!-- 6 CNN / ResNet -->
+  <!-- 6 KONVOLUCE -->
   <section class="slide">
     <div class="wrap">
-      <div class="kicker reveal" style="--i:0">Encoder · konvoluční síť</div>
-      <h2 class="reveal" style="--i:1">ResNet: z pixelů postupně skládá smysl</h2>
+      <div class="kicker reveal" style="--i:0">Encoder · konvoluce</div>
+      <h2 class="reveal" style="--i:1">Jak funguje konvoluce</h2>
       <div class="grid2" style="margin-top:.4rem">
         <div>
           <ul class="list">
-            <li class="reveal" style="--i:2"><span><strong>Konvoluce</strong> klouže po obrázku a hledá vzory — nejdřív hrany, pak textury, pak tvary.</span></li>
-            <li class="reveal" style="--i:3"><span><strong>Reziduální spojení</strong> (zkratky) umožní síť opravdu hluboko — 50 vrstev — aniž by se „ztratil signál“.</span></li>
-            <li class="reveal" style="--i:4"><span>Na konci zůstane <span class="teal">2048 čísel</span> shrnujících, co na buňce je.</span></li>
+            <li class="reveal" style="--i:2"><span>Malý <strong>filtr</strong> (např. mřížka 3×3 vah) <strong>klouže po obrázku</strong> a v každé pozici spočítá vážený součet pixelů — jediné číslo.</span></li>
+            <li class="reveal" style="--i:3"><span>Z těch čísel vznikne <strong>mapa příznaků</strong>: ukazuje, <em>kde</em> se hledaný vzor (hrana, skvrna) v obrázku objevuje.</span></li>
+            <li class="reveal" style="--i:4"><span>Vrstvení konvolucí staví <strong>hierarchii</strong>: <span class="teal">hrany → textury → tvary</span>. A síť si ty filtry <strong>najde sama</strong> při trénování.</span></li>
           </ul>
         </div>
         <div class="reveal" style="--i:3">
-          <svg class="svgbox" viewBox="0 0 460 220" fill="none" font-family="IBM Plex Mono">
-            <defs><linearGradient id="gst" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="#1ea08f"/><stop offset="1" stop-color="#35d6c0"/></linearGradient></defs>
-            <rect x="6" y="70" width="40" height="80" rx="6" fill="rgba(255,255,255,.06)" stroke="var(--line)"/>
-            <text x="26" y="170" fill="#93a1b3" font-size="10" text-anchor="middle">vstup</text>
-            <rect x="66" y="60" width="34" height="100" rx="6" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.4)"/>
-            <rect x="112" y="74" width="34" height="72" rx="6" fill="rgba(53,214,192,.12)" stroke="rgba(53,214,192,.4)"/>
-            <rect x="158" y="86" width="34" height="48" rx="6" fill="rgba(53,214,192,.14)" stroke="rgba(53,214,192,.4)"/>
-            <rect x="204" y="94" width="34" height="32" rx="6" fill="rgba(53,214,192,.16)" stroke="rgba(53,214,192,.4)"/>
-            <text x="150" y="200" fill="#93a1b3" font-size="10" text-anchor="middle">reziduální bloky (hloubka ↑, rozlišení ↓)</text>
-            <path d="M70 50 q40 -22 80 0" stroke="#35d6c0" stroke-width="1.4" fill="none" opacity=".7"/>
-            <path d="M116 52 q40 -20 80 0" stroke="#35d6c0" stroke-width="1.4" fill="none" opacity=".7"/>
-            <circle cx="300" cy="110" r="26" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
-            <text x="300" y="114" fill="#cdd6e2" font-size="9" text-anchor="middle">pool</text>
-            <rect x="350" y="86" width="100" height="48" rx="8" fill="url(#gst)"/>
-            <text x="400" y="114" fill="#06231f" font-size="12" font-weight="600" text-anchor="middle">2048-D</text>
+          <svg class="svgbox" viewBox="0 0 480 180" fill="none" font-family="IBM Plex Mono">
+            <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+              <path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>
+            <g stroke="var(--line)">
+              <rect x="16" y="20" width="110" height="110" rx="4" fill="rgba(255,255,255,.04)"/>
+              <line x1="38" y1="20" x2="38" y2="130"/><line x1="60" y1="20" x2="60" y2="130"/>
+              <line x1="82" y1="20" x2="82" y2="130"/><line x1="104" y1="20" x2="104" y2="130"/>
+              <line x1="16" y1="42" x2="126" y2="42"/><line x1="16" y1="64" x2="126" y2="64"/>
+              <line x1="16" y1="86" x2="126" y2="86"/><line x1="16" y1="108" x2="126" y2="108"/>
+            </g>
+            <rect x="16" y="20" width="66" height="66" fill="rgba(53,214,192,.22)" stroke="#35d6c0" stroke-width="1.6"/>
+            <text x="71" y="150" fill="#93a1b3" font-size="11" text-anchor="middle">vstup (pixely)</text>
+            <g stroke="#35d6c0">
+              <rect x="190" y="34" width="60" height="60" rx="4" fill="rgba(53,214,192,.14)"/>
+              <line x1="210" y1="34" x2="210" y2="94"/><line x1="230" y1="34" x2="230" y2="94"/>
+              <line x1="190" y1="54" x2="250" y2="54"/><line x1="190" y1="74" x2="250" y2="74"/>
+            </g>
+            <text x="220" y="112" fill="#35d6c0" font-size="11" text-anchor="middle">filtr 3×3</text>
+            <g stroke="var(--line)">
+              <rect x="338" y="34" width="66" height="66" rx="4" fill="rgba(255,255,255,.04)"/>
+              <line x1="360" y1="34" x2="360" y2="100"/><line x1="382" y1="34" x2="382" y2="100"/>
+              <line x1="338" y1="56" x2="404" y2="56"/><line x1="338" y1="78" x2="404" y2="78"/>
+            </g>
+            <rect x="338" y="34" width="22" height="22" fill="rgba(53,214,192,.55)"/>
+            <text x="371" y="120" fill="#93a1b3" font-size="11" text-anchor="middle">mapa příznaků</text>
+            <path d="M84 53 L188 60" stroke="#35d6c0" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>
+            <path d="M252 62 L335 47" stroke="#35d6c0" stroke-width="1.6" opacity=".9" marker-end="url(#ah)"/>
+            <text x="296" y="30" fill="#cdd6e2" font-size="11" text-anchor="middle">Σ vážený součet</text>
           </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 ARCHITEKTURA RESNET -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Encoder · architektura</div>
+      <h2 class="reveal" style="--i:1">Architektura ResNet-50</h2>
+      <div class="reveal" style="--i:2;margin:.7rem auto 0;max-width:860px">
+        <svg class="svgbox" viewBox="0 0 580 132" fill="none" font-family="IBM Plex Mono">
+          <defs>
+            <linearGradient id="gst" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#1ea08f"/><stop offset="1" stop-color="#35d6c0"/></linearGradient>
+            <marker id="ar" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+              <path d="M0 0 L5 3 L0 6 z" fill="#5b6675"/></marker>
+          </defs>
+          <g stroke="#5b6675" stroke-width="1.3">
+            <line x1="42" y1="56" x2="50" y2="56" marker-end="url(#ar)"/>
+            <line x1="96" y1="56" x2="104" y2="56" marker-end="url(#ar)"/>
+            <line x1="142" y1="56" x2="150" y2="56" marker-end="url(#ar)"/>
+            <line x1="192" y1="56" x2="200" y2="56" marker-end="url(#ar)"/>
+            <line x1="244" y1="56" x2="252" y2="56" marker-end="url(#ar)"/>
+            <line x1="296" y1="56" x2="304" y2="56" marker-end="url(#ar)"/>
+            <line x1="346" y1="56" x2="354" y2="56" marker-end="url(#ar)"/>
+            <line x1="392" y1="56" x2="400" y2="56" marker-end="url(#ar)"/>
+          </g>
+          <!-- vstup, stem, pool -->
+          <rect x="4" y="32" width="38" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
+          <text x="23" y="59" fill="#cdd6e2" font-size="9" text-anchor="middle">224²</text>
+          <rect x="50" y="32" width="46" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
+          <text x="73" y="54" fill="#cdd6e2" font-size="8.5" text-anchor="middle">7×7</text>
+          <text x="73" y="65" fill="#93a1b3" font-size="8" text-anchor="middle">stem /2</text>
+          <rect x="104" y="32" width="38" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
+          <text x="123" y="59" fill="#93a1b3" font-size="8.5" text-anchor="middle">pool</text>
+          <!-- 4 etapy: výška klesá (rozlišení), kanály rostou -->
+          <g text-anchor="middle">
+            <rect x="150" y="22" width="42" height="68" rx="5" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.45)"/>
+            <text x="171" y="60" fill="#eaf0f7" font-size="13">×3</text>
+            <text x="171" y="104" fill="#93a1b3" font-size="9">256</text>
+            <rect x="200" y="30" width="44" height="52" rx="5" fill="rgba(53,214,192,.12)" stroke="rgba(53,214,192,.45)"/>
+            <text x="222" y="60" fill="#eaf0f7" font-size="13">×4</text>
+            <text x="222" y="104" fill="#93a1b3" font-size="9">512</text>
+            <rect x="252" y="36" width="44" height="40" rx="5" fill="rgba(53,214,192,.14)" stroke="rgba(53,214,192,.45)"/>
+            <text x="274" y="60" fill="#eaf0f7" font-size="13">×6</text>
+            <text x="274" y="104" fill="#93a1b3" font-size="9">1024</text>
+            <rect x="304" y="42" width="42" height="28" rx="5" fill="rgba(53,214,192,.16)" stroke="rgba(53,214,192,.45)"/>
+            <text x="325" y="60" fill="#eaf0f7" font-size="13">×3</text>
+            <text x="325" y="104" fill="#93a1b3" font-size="9">2048</text>
+          </g>
+          <text x="248" y="14" fill="#93a1b3" font-size="9" text-anchor="middle">4 etapy reziduálních bloků</text>
+          <!-- GAP a výstup -->
+          <rect x="354" y="32" width="46" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
+          <text x="377" y="54" fill="#cdd6e2" font-size="8.5" text-anchor="middle">global</text>
+          <text x="377" y="65" fill="#93a1b3" font-size="8" text-anchor="middle">avg pool</text>
+          <rect x="400" y="34" width="118" height="44" rx="7" fill="url(#gst)"/>
+          <text x="459" y="60" fill="#06231f" font-size="14" font-weight="600" text-anchor="middle">2048-D</text>
+          <text x="459" y="96" fill="#93a1b3" font-size="9" text-anchor="middle">(fc 1000 odřízneme)</text>
+        </svg>
+      </div>
+      <div class="grid2" style="margin-top:.6rem">
+        <div class="reveal" style="--i:3">
+          <svg class="svgbox" style="max-width:380px" viewBox="0 0 380 150" fill="none" font-family="IBM Plex Mono">
+            <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+              <path d="M0 0 L5 3 L0 6 z" fill="#5b6675"/></marker>
+            <marker id="ar3" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+              <path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>
+            <circle cx="26" cy="84" r="15" fill="rgba(255,255,255,.06)" stroke="var(--line)"/>
+            <text x="26" y="88" fill="#cdd6e2" font-size="13" text-anchor="middle">x</text>
+            <g stroke="#5b6675" stroke-width="1.3">
+              <line x1="42" y1="84" x2="76" y2="84" marker-end="url(#ar2)"/>
+              <line x1="162" y1="84" x2="186" y2="84" marker-end="url(#ar2)"/>
+              <line x1="272" y1="84" x2="294" y2="84" marker-end="url(#ar2)"/>
+            </g>
+            <rect x="78" y="64" width="84" height="40" rx="8" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.4)"/>
+            <text x="120" y="81" fill="#cdd6e2" font-size="9.5" text-anchor="middle">3×3 konv</text>
+            <text x="120" y="94" fill="#93a1b3" font-size="9.5" text-anchor="middle">+ ReLU</text>
+            <rect x="188" y="64" width="84" height="40" rx="8" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.4)"/>
+            <text x="230" y="87" fill="#cdd6e2" font-size="9.5" text-anchor="middle">3×3 konv</text>
+            <circle cx="310" cy="84" r="14" fill="rgba(240,71,107,.16)" stroke="var(--crimson)"/>
+            <text x="310" y="89" fill="#fff" font-size="15" text-anchor="middle">+</text>
+            <line x1="324" y1="84" x2="356" y2="84" stroke="#5b6675" stroke-width="1.3" marker-end="url(#ar2)"/>
+            <path d="M26 69 C 26 28, 310 28, 310 66" stroke="#35d6c0" stroke-width="1.7" fill="none" marker-end="url(#ar3)"/>
+            <text x="168" y="24" fill="#35d6c0" font-size="10" text-anchor="middle">zkratka: přičti x</text>
+            <text x="180" y="132" fill="#93a1b3" font-size="10" text-anchor="middle">blok se učí jen „opravu“ (reziduum)</text>
+          </svg>
+        </div>
+        <div>
+          <ul class="list">
+            <li class="reveal" style="--i:4"><span><strong>Reziduální blok:</strong> vstup se přičte <strong>zkratkou</strong> za pár vrstev. Síť se učí jen malou opravu — proto jde do <strong>50 vrstev</strong> bez ztráty signálu.</span></li>
+            <li class="reveal" style="--i:5"><span>Čtyři etapy bloků <span class="tt">[3, 4, 6, 3]</span>: rozlišení klesá, kanály rostou až na <span class="teal">2048</span>.</span></li>
+          </ul>
         </div>
       </div>
     </div>
@@ -438,10 +549,10 @@ strong{color:#fff;font-weight:600}
       <div>
         <div class="kicker reveal" style="--i:0">Už to vidí</div>
         <h2 class="reveal" style="--i:1">Featury samy<br>tvoří dva shluky</h2>
-        <p class="reveal" style="--i:2">2048 rozměrů promítneme metodou <span class="tt">PCA</span> do roviny a obarvíme podle skutečné třídy.</p>
+        <p class="reveal" style="--i:2">2048 rozměrů promítneme metodou <span class="tt">t-SNE</span> (nelineární projekce) do roviny a obarvíme podle skutečné třídy.</p>
         <p class="reveal" style="--i:3;margin-top:.8rem">Zdravé (<span class="teal">tyrkysové</span>) a napadené (<span class="crim">červené</span>) se oddělují <strong>ještě než cokoli trénujeme</strong>. ResNet už odvedl většinu práce — zbývá najít dělící čáru.</p>
       </div>
-      <div class="figframe reveal" style="--i:3"><img src="__PCA__" alt="PCA projekce featur"></div>
+      <div class="figframe reveal" style="--i:3"><img src="__PCA__" alt="t-SNE projekce featur"></div>
     </div>
   </section>
 
