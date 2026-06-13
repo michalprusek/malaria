@@ -277,7 +277,7 @@ strong{color:#fff;font-weight:600}
   <section class="slide">
     <div class="wrap">
       <div class="kicker reveal" style="--i:0">Veletrh vědy · FJFI ČVUT</div>
-      <h1 class="reveal" style="--i:1">Detekuje malárii lépe<br>člověk, nebo <span class="teal">notebook?</span></h1>
+      <h1 class="reveal" style="--i:1">Detekuje malárii lépe<br>člověk, nebo <span class="teal">počítač?</span></h1>
       <p class="lead reveal" style="--i:2;margin-top:1.2rem">Hluboké učení v diagnostice z mikroskopu — od pixelů buňky k rozhodnutí, které může zachránit život.</p>
       <div class="chips reveal" style="--i:3">
         <span class="chip"><b>Michal Průšek</b></span>
