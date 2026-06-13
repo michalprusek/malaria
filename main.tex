@@ -43,7 +43,7 @@
 \newcommand{\knnSpec}{0{,}99}       % specificita při prahu 0,5
 \newcommand{\knnFN}{904}            % přehlédnutí nemocní při prahu 0,5
 \newcommand{\knnTP}{1163}
-\newcommand{\knnSensNF}{0{,}74}     % SOUTĚŽNÍ metrika: senzitivita @ spec >= 95 %
+\newcommand{\knnSpecNF}{0{,}00}     % SOUTĚŽNÍ metrika: specificita @ senzitivita >= 99 %
 \newcommand{\knnAUC}{0{,}93}
 
 \title{\textbf{Detekce parazita malárie v~krevním nátěru pomocí\\
@@ -180,11 +180,11 @@ vyměňují podle zvoleného \emph{prahu}, nad kterým buňku prohlásíme za na
 kompromis zachycuje ROC křivka (receiver operating characteristic) a~souhrnně plocha pod
 ní (area under the curve, AUC).
 
-Jako hlavní \textbf{soutěžní metriku} jsme zvolili \emph{senzitivitu při specificitě
-$\geq 95~\%$} --- tedy kolik nemocných model zachytí, smí-li si dovolit nanejvýš 5~\%
-falešných poplachů. Tato metrika přímo kóduje medicínský požadavek \uv{nepřehlédnout nemocného
-a~přitom zbytečně nealarmovat} a~odpovídá bodu na ROC křivce při 5~\% falešně pozitivním
-poměru.
+Jako hlavní \textbf{soutěžní metriku} jsme zvolili \emph{specificitu při senzitivitě
+$\geq 99~\%$}. U~smrtelné nemoci je totiž nepodkročitelným požadavkem \uv{nepřehlédnout
+nemocného}, proto fixujeme senzitivitu vysoko (zachytit aspoň 99~\% napadených) a~soutěžíme
+v~tom, kdo přitom udrží nejvyšší specificitu, tedy nejméně falešných poplachů. Odpovídá to
+bodu na ROC křivce při senzitivitě 99~\%.
 
 \subsection{Protokol}
 \label{sec:protokol}
@@ -202,22 +202,24 @@ a~senzitivitou: při výchozím prahu $0{,}5$ dosahuje $k$-NN přesnosti \knnAcc
 jen \knnSens{} --- jak ukazuje matice záměn na \cref{fig:confusion}, přehlédne \knnFN{} z~2067
 napadených buněk. Vysoká specificita (\knnSpec{}) tu tedy maskuje, že model propustí téměř
 polovinu nemocných; samotná přesnost by nás obelhala. Teprve pohled na celou ROC křivku
-(\cref{fig:roc}) ukazuje skutečný potenciál modelu: plocha pod ní je \knnAUC{}, a~posuneme-li
-práh tak, abychom připustili 5~\% falešných poplachů (specificita 95~\%), vzroste senzitivita
-na \knnSensNF{}. To je naše soutěžní skóre, které se budete snažit překonat.
+(\cref{fig:roc}) ukazuje, že schopnost \emph{seřadit} buňky není špatná: plocha pod ní je
+\knnAUC{}. Naše soutěžní metrika je ale přísnější. Požadujeme zachytit aspoň 99~\% nemocných,
+a~při této podmínce klesá specificita $k$-NN na \knnSpecNF{} --- aby chytil 99~\% napadených,
+musel by práh posunout tak nízko, že označí prakticky všechny buňky. Jednoduchý baseline tedy
+na klinickou laťku nedosáhne; právě to je důvod naučit lepší model (váš úkol).
 
 % --- Tabulka výsledků --------------------------------------------------
 \begin{table}[t]
 \centering
 \caption{Výsledky na skryté testovací sadě (\Ntest{} buněk). Přesnost, senzitivita
-a~specificita jsou uvedeny při výchozím prahu $0{,}5$; soutěžní metrika je senzitivita
-při specificitě~$\geq 95~\%$. Hodnoty jsou z~jednoho deterministického běhu.}
+a~specificita jsou uvedeny při výchozím prahu $0{,}5$; soutěžní metrika je specificita
+při senzitivitě~$\geq 99~\%$. Hodnoty jsou z~jednoho deterministického běhu.}
 \label{tab:vysledky}
 \begin{tabular}{l S[table-format=1.2] S[table-format=1.2] S[table-format=1.2] S[table-format=1.2] S[table-format=1.2]}
 \toprule
-Metoda & {Přesnost} & {Senzitivita} & {Specificita} & {Senz.\,@\,spec.\,95\,\%} & {AUC} \\
+Metoda & {Přesnost} & {Senzitivita} & {Specificita} & {Spec.\,@\,sens.\,99\,\%} & {AUC} \\
 \midrule
-ResNet50 + $k$-NN (baseline) & 0.77 & 0.56 & 0.99 & 0.74 & 0.93 \\
+ResNet50 + $k$-NN (baseline) & 0.77 & 0.56 & 0.99 & 0.00 & 0.93 \\
 Vaše řešení                  & {--} & {--} & {--} & {--} & {--} \\
 \bottomrule
 \end{tabular}
@@ -236,9 +238,9 @@ levý dolní roh (\knnFN{}) jsou \emph{přehlédnutí} nemocní --- nejdražší
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.6\linewidth]{figs/roc_baseline.png}
-\caption{ROC křivka $k$-NN baseline na testovací sadě. Vyznačený bod odpovídá soutěžní
-metrice --- nejvyšší senzitivitě dosažitelné při specificitě alespoň 95~\% (tj. nanejvýš
-5~\% falešných poplachů).}
+\caption{ROC křivka $k$-NN baseline na testovací sadě. Vodorovná čára značí požadovanou
+senzitivitu 99~\%; soutěžní metrika je nejvyšší specificita dosažitelná nad touto čarou.
+Baseline jí dosahuje až při téměř 100~\% falešně pozitivním poměru (specificita $\approx 0$).}
 \label{fig:roc}
 \end{figure}
 
@@ -270,7 +272,7 @@ Ukázali jsme, že zmrazený ResNet50 jako extraktor příznaků v~kombinaci s~j
 klasifikátorem $k$ nejbližších sousedů dosahuje na datasetu NIH plochy pod ROC křivkou
 \knnAUC{}, a~zdůraznili jsme, proč je v~medicíně nutné hodnotit senzitivitu a~specificitu,
 nikoli pouhou přesnost. Tento baseline je výchozím bodem, který má vaše řešení překonat ---
-zejména zvýšit senzitivitu při zachování vysoké specificity.
+zejména udržet co nejvyšší specificitu při požadované senzitivitě 99~\%.
 
 % =====================================================================
 % Bibliografie je v souboru refs.bib.

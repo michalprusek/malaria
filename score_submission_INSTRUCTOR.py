@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Vyhodnocení soutěže — INSTRUKTORSKÝ skript.
 
-Spočítá pro každý tým SOUTĚŽNÍ METRIKU = senzitivita při specificitě >= 95 %
-(tj. bod ROC křivky na FPR = 5 %) na SKRYTÉM testu, seřadí žebříček a vykreslí
-ROC křivky všech týmů do jednoho grafu pro finální vyhlášení.
+Spočítá pro každý tým SOUTĚŽNÍ METRIKU = specificita při senzitivitě >= 99 %.
+Logika: u smrtelné nemoci je nepodkročitelný požadavek NEPŘEHLÉDNOUT nemocného,
+proto fixujeme senzitivitu vysoko (>= 99 %, tj. zachytíme aspoň 99 % napadených)
+a soutěžíme v tom, kdo přitom udrží co nejvyšší specificitu (nejméně falešných
+poplachů). Je to bod na ROC křivce při senzitivitě 99 %.
 
 Použití:
     python3 score_submission_INSTRUCTOR.py
@@ -21,16 +23,15 @@ import numpy as np
 from sklearn.metrics import roc_curve
 
 
-def sensitivity_at_specificity(y_true, y_prob, min_spec=0.95):
-    """Nejvyšší senzitivita, kterou lze dosáhnout při specificitě >= min_spec."""
-    fpr, tpr, thr = roc_curve(y_true, y_prob)        # fpr = 1 - specificita
-    ok = fpr <= (1.0 - min_spec)
-    best = int(np.argmax(np.where(ok, tpr, -1.0)))
-    return float(tpr[best]), float(thr[best]), float(1.0 - fpr[best])
+def specificity_at_sensitivity(y_true, y_prob, min_sens=0.99):
+    """Nejvyšší specificita dosažitelná při senzitivitě (recall) >= min_sens."""
+    fpr, tpr, thr = roc_curve(y_true, y_prob)          # tpr = senzitivita
+    ok = tpr >= min_sens
+    best = int(np.argmin(np.where(ok, fpr, 2.0)))      # nejmenší fpr (=max specificita)
+    return float(1.0 - fpr[best]), float(thr[best]), float(tpr[best])
 
 
 def load_submission(path):
-    """Načte odevzdání (hlavička 'prob' + hodnoty) → 1D pole pravděpodobností."""
     return np.loadtxt(path, skiprows=1)
 
 
@@ -44,7 +45,7 @@ def main():
     ap = argparse.ArgumentParser(description="Vyhodnocení soutěže v detekci malárie")
     ap.add_argument("--labels", default="test_labels.npz", help="npz s pravými labely testu")
     ap.add_argument("--subs", default=".", help="adresář s odevzdáními predikce_*.csv")
-    ap.add_argument("--min-spec", type=float, default=0.95, help="požadovaná specificita")
+    ap.add_argument("--min-sens", type=float, default=0.99, help="požadovaná senzitivita")
     ap.add_argument("--out", default="vysledky_soutez.png", help="kam uložit graf ROC")
     args = ap.parse_args()
 
@@ -65,13 +66,13 @@ def main():
         if len(prob) != len(y_true):
             print(f"⚠️  {name}: {len(prob)} predikcí, ale test má {len(y_true)} buněk — přeskakuji.")
             continue
-        sens, thr, spec = sensitivity_at_specificity(y_true, prob, args.min_spec)
-        results.append((name, sens, thr, spec))
+        spec, thr, sens = specificity_at_sensitivity(y_true, prob, args.min_sens)
+        results.append((name, spec, thr, sens))
         fpr, tpr, _ = roc_curve(y_true, prob)
-        plt.plot(fpr, tpr, lw=2, label=f"{name}  (sens={sens:.3f})")
+        plt.plot(fpr, tpr, lw=2, label=f"{name}  (spec={spec:.3f})")
 
-    plt.axvline(1 - args.min_spec, ls="--", color="gray",
-                label=f"hranice specificity {args.min_spec:.0%}")
+    plt.axhline(args.min_sens, ls="--", color="crimson",
+                label=f"požadovaná senzitivita {args.min_sens:.0%}")
     plt.plot([0, 1], [0, 1], ls=":", color="lightgray")
     plt.xlabel("1 − specificita (falešné poplachy)")
     plt.ylabel("senzitivita (zachycení nemocní)")
@@ -81,18 +82,18 @@ def main():
     plt.savefig(args.out, dpi=120)
     print(f"\nGraf uložen do: {args.out}")
 
-    # žebříček
+    # žebříček: vyšší specificita = lepší
     results.sort(key=lambda r: r[1], reverse=True)
-    print("\n" + "=" * 60)
-    print(f"  ŽEBŘÍČEK — senzitivita při specificitě >= {args.min_spec:.0%}")
-    print("=" * 60)
-    for rank, (name, sens, thr, spec) in enumerate(results, 1):
+    print("\n" + "=" * 64)
+    print(f"  ŽEBŘÍČEK — specificita při senzitivitě >= {args.min_sens:.0%}")
+    print("=" * 64)
+    for rank, (name, spec, thr, sens) in enumerate(results, 1):
         medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(rank, "  ")
-        print(f"  {medal} {rank}. {name:20s}  senzitivita = {sens:.3f}   "
-              f"(práh {thr:.3f}, specificita {spec:.3f})")
-    print("=" * 60)
+        print(f"  {medal} {rank}. {name:20s}  specificita = {spec:.3f}   "
+              f"(práh {thr:.3f}, dosažená senzitivita {sens:.3f})")
+    print("=" * 64)
     if results:
-        print(f"\n🏆 Vítěz: {results[0][0]}  se senzitivitou {results[0][1]:.3f}")
+        print(f"\n🏆 Vítěz: {results[0][0]}  se specificitou {results[0][1]:.3f}")
 
 
 if __name__ == "__main__":

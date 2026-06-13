@@ -80,8 +80,8 @@ knn = KNeighborsClassifier(n_neighbors=31, weights="distance", n_jobs=-1).fit(Xt
 p_knn = knn.predict_proba(Xte_s)[:, 1]
 tn, fp, fn, tp = confusion_matrix(yte, (p_knn >= 0.5).astype(int), labels=[0, 1]).ravel()
 knn_acc = (((p_knn >= 0.5).astype(int)) == yte).mean()
-fpr, tpr, _ = roc_curve(yte, p_knn); ok = fpr <= 0.05; b = int(np.argmax(np.where(ok, tpr, -1)))
-knn_sens95, knn_spec95 = tpr[b], 1 - fpr[b]; knn_auc = roc_auc_score(yte, p_knn)
+fpr, tpr, _ = roc_curve(yte, p_knn); ok = tpr >= 0.99; b = int(np.argmin(np.where(ok, fpr, 2.0)))
+knn_spec99, knn_sensp = 1 - fpr[b], tpr[b]; knn_auc = roc_auc_score(yte, p_knn)
 
 # ---------- MLP (naučená hlava) na testu ----------
 Xtr_t = torch.tensor(Xtr_s); ytr_t = torch.tensor(ytr, dtype=torch.float32)
@@ -97,23 +97,23 @@ for ep in range(30):
 mlp.eval()
 with torch.no_grad():
     p_mlp = torch.sigmoid(mlp(Xte_t).squeeze(1)).numpy()
-fpr_m, tpr_m, _ = roc_curve(yte, p_mlp); okm = fpr_m <= 0.05; bm = int(np.argmax(np.where(okm, tpr_m, -1)))
-mlp_sens95 = tpr_m[bm]; mlp_auc = roc_auc_score(yte, p_mlp)
+fpr_m, tpr_m, _ = roc_curve(yte, p_mlp); okm = tpr_m >= 0.99; bm = int(np.argmin(np.where(okm, fpr_m, 2.0)))
+mlp_spec99 = 1 - fpr_m[bm]; mlp_auc = roc_auc_score(yte, p_mlp)
 mlp_acc = (((p_mlp >= 0.5).astype(int)) == yte).mean()
 
-# ROC obě křivky
+# ROC obě křivky; soutěžní bod = nejnižší falešné poplachy při senzitivitě >= 99 %
 fig, ax = plt.subplots(figsize=(7.0, 5.4))
 ax.plot(fpr, tpr, lw=2.4, color=MUTED, label=f"k-NN  (AUC {knn_auc:.2f})")
 ax.plot(fpr_m, tpr_m, lw=2.6, color=TEAL, label=f"MLP  (AUC {mlp_auc:.2f})")
-ax.axvline(0.05, ls="--", lw=1.2, color=CRIMSON, alpha=0.8)
-ax.scatter([1 - knn_spec95], [knn_sens95], color=MUTED, zorder=5, s=40)
+ax.axhline(0.99, ls="--", lw=1.2, color=CRIMSON, alpha=0.85)
+ax.scatter([fpr[b]], [tpr[b]], color=MUTED, zorder=5, s=40)
 ax.scatter([fpr_m[bm]], [tpr_m[bm]], color=TEAL, zorder=5, s=55, edgecolors="white", linewidths=0.6)
 ax.plot([0, 1], [0, 1], ls=":", color=GRID)
 ax.set_xlabel("1 − specificita  (falešné poplachy)"); ax.set_ylabel("senzitivita")
 ax.set_xlim(-0.02, 1.02); ax.set_ylim(-0.02, 1.02)
 leg = ax.legend(loc="lower right", frameon=False, fontsize=12)
 for t in leg.get_texts(): t.set_color(INK)
-ax.text(0.055, 0.05, "hranice 5 % falešných poplachů", color=CRIMSON, fontsize=10, rotation=90, va="bottom")
+ax.text(0.5, 0.965, "požadovaná senzitivita 99 %", color=CRIMSON, fontsize=10, ha="center", va="top")
 style_axes(ax)
 ROC_B64 = fig_to_b64(fig)
 
@@ -122,19 +122,19 @@ inf = sorted(glob.glob("samples/Parasitized/*.png"))[0]
 hea = sorted(glob.glob("samples/Uninfected/*.png"))[0]
 CELL_INF = img_to_b64(inf); CELL_OK = img_to_b64(hea)
 
-print(f"k-NN: acc={knn_acc:.3f} sens95={knn_sens95:.3f} auc={knn_auc:.3f} (tn,fp,fn,tp={tn,fp,fn,tp})")
-print(f"MLP : acc={mlp_acc:.3f} sens95={mlp_sens95:.3f} auc={mlp_auc:.3f}")
+print(f"k-NN: acc={knn_acc:.3f} spec@sens99={knn_spec99:.3f} auc={knn_auc:.3f} (tn,fp,fn,tp={tn,fp,fn,tp})")
+print(f"MLP : acc={mlp_acc:.3f} spec@sens99={mlp_spec99:.3f} auc={mlp_auc:.3f}")
 
 vals = dict(
-    KNN_SENS=f"{knn_sens95:.2f}".replace(".", ","),
-    MLP_SENS=f"{mlp_sens95:.2f}".replace(".", ","),
+    KNN_SPEC=f"{knn_spec99:.2f}".replace(".", ","),
+    MLP_SPEC=f"{mlp_spec99:.2f}".replace(".", ","),
     KNN_ACC=f"{knn_acc:.2f}".replace(".", ","),
     MLP_ACC=f"{mlp_acc:.2f}".replace(".", ","),
     KNN_AUC=f"{knn_auc:.2f}".replace(".", ","),
     MLP_AUC=f"{mlp_auc:.2f}".replace(".", ","),
     TN=str(tn), FP=str(fp), FN=str(fn), TP=str(tp),
-    KNN_SENS_PCT=str(round(knn_sens95 * 100)),
-    MLP_SENS_PCT=str(round(mlp_sens95 * 100)),
+    KNN_SPEC_PCT=str(round(knn_spec99 * 100)),
+    MLP_SPEC_PCT=str(round(mlp_spec99 * 100)),
 )
 
 # =====================================================================
@@ -595,7 +595,7 @@ strong{color:#fff;font-weight:600}
         <ul class="list">
           <li class="reveal" style="--i:2"><span><strong>Senzitivita</strong> — kolik nemocných zachytíme. Nízká = přehlížíme pacienty. <span class="crim">Může stát život.</span></span></li>
           <li class="reveal" style="--i:3"><span><strong>Specificita</strong> — kolik zdravých správně propustíme. Nízká = zbytečné poplachy.</span></li>
-          <li class="reveal" style="--i:4"><span>Hodnotíme proto <strong>senzitivitu při specificitě ≥ 95 %</strong> — bod na ROC křivce.</span></li>
+          <li class="reveal" style="--i:4"><span>Soutěžíme proto ve <strong>specificitě při senzitivitě ≥ 99 %</strong>: fixujeme to důležité (chytit nemocné) a měříme, kdo přitom nejméně plaší zdravé.</span></li>
         </ul>
       </div>
       <div class="figframe reveal" style="--i:3"><img src="__ROC__" alt="ROC křivka"></div>
@@ -625,18 +625,18 @@ strong{color:#fff;font-weight:600}
         </svg>
       </div>
       <div class="reveal" style="--i:3">
-        <h3>Senzitivita při specificitě 95 %</h3>
+        <h3>Specificita při senzitivitě 99 %</h3>
         <div class="bars">
           <div class="bar">
-            <div class="top"><span>k-NN baseline</span><span class="tt">__KNN_SENS__</span></div>
-            <div class="track"><div class="fill knn" style="--v:__KNN_SENS_PCT__%"></div></div>
+            <div class="top"><span>k-NN baseline</span><span class="tt">__KNN_SPEC__</span></div>
+            <div class="track"><div class="fill knn" style="--v:__KNN_SPEC_PCT__%"></div></div>
           </div>
           <div class="bar">
-            <div class="top"><span class="teal">MLP (naučená hlava)</span><span class="tt teal">__MLP_SENS__</span></div>
-            <div class="track"><div class="fill mlp" style="--v:__MLP_SENS_PCT__%"></div></div>
+            <div class="top"><span class="teal">MLP (naučená hlava)</span><span class="tt teal">__MLP_SPEC__</span></div>
+            <div class="track"><div class="fill mlp" style="--v:__MLP_SPEC_PCT__%"></div></div>
           </div>
         </div>
-        <p style="margin-top:1rem">Z <span class="tt">__KNN_SENS__</span> na <span class="teal tt">__MLP_SENS__</span> — tatáž data, chytřejší rozhodnutí. <strong>Baseline překonán.</strong></p>
+        <p style="margin-top:1rem">k-NN na laťku 99% záchytu <strong>vůbec nedosáhne</strong> (specificita <span class="tt">__KNN_SPEC__</span>) — musel by hlásit skoro všechny. MLP udrží <span class="teal tt">__MLP_SPEC__</span>. <strong>Baseline překonán.</strong></p>
       </div>
     </div>
   </section>

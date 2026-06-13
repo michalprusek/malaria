@@ -110,9 +110,10 @@ přesunu dat jinam.)*
    Skript vypíše žebříček (🥇🥈) a uloží `vysledky_soutez.png` se srovnáním ROC křivek
    — ideální na projektor.
 
-**Soutěžní metrika = senzitivita při specificitě ≥ 95 %**: *Kolik nemocných model zachytí,
-když si dovolí nanejvýš 5 % falešných poplachů?* Citlivá na malé rozdíly, vystihuje medicínský
-kompromis.
+**Soutěžní metrika = specificita při senzitivitě ≥ 99 %**: *Jak málo zdravých zbytečně
+poplašíme, když musíme zachytit aspoň 99 % nemocných?* U smrtelné nemoci je „nepřehlédnout
+nemocného" nepodkročitelná podmínka, proto fixujeme senzitivitu vysoko a soutěžíme ve specificitě.
+(Práh úrovně se mění v `score_submission_INSTRUCTOR.py` přepínačem `--min-sens`.)
 
 > 💡 Protože je split deterministický, `test_labels.npz` sedí na predikce z **obou** datových
 > cest (rychlé i soběstačné) — scoring funguje vždy.
@@ -153,11 +154,12 @@ Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co
   ukládáno jako `float16` (komprimované `.npz`: train 54 MB + val 12 MB + test 12 MB ≈ 78 MB).
 - **Split**: stratifikovaný 70 / 15 / 15 (train 19 289, val 4 135, test 4 134), pevný seed 42,
   **deterministické pořadí obrázků** (řazeno podle názvu souboru → stejný split na každém stroji).
-- **Baseline = k-NN** (k=31, vážený vzdáleností, na standardizovaných featurech): na reálných
-  datech ~80 % přesnost a **senzitivita ≈ 0,73 @ spec 95 %** — záměrně slabší (prokletí
-  dimenzionality ve 2048 rozměrech), aby měli studenti co překonávat.
-- **Trénovaná hlava** (malá MLP v PyTorch, `BCEWithLogitsLoss`, Adam): ~94 % přesnost a
-  **senzitivita ≈ 0,92 @ spec 95 %** — výrazně překoná baseline, cíl je tlačit k 0,95+.
+- **Baseline = k-NN** (k=31, vážený vzdáleností, na standardizovaných featurech): AUC ≈ 0,93,
+  ale soutěžní metrika **specificita @ senzitivita ≥ 99 % = 0,00** — aby chytil 99 % nemocných,
+  musel by označit skoro všechny (prokletí dimenzionality). Na klinickou laťku tedy nedosáhne,
+  což přesně motivuje učený model.
+- **Trénovaná hlava** (malá MLP v PyTorch, `BCEWithLogitsLoss`, Adam): AUC ≈ 0,98 a
+  **specificita ≈ 0,63 @ senzitivita 99 %** — výrazně překoná baseline.
 - Notebooky i scoring byly otestovány spuštěním end-to-end; featury byly extrahovány a
   ověřeny na reálných datech.
 - Augmentace dat zde nelze (featury jsou fixní) — vhodné téma na diskusi „co s plnými obrázky".

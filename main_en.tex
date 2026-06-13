@@ -36,7 +36,7 @@
 \newcommand{\knnSpec}{0.99}     % specificity at threshold 0.5
 \newcommand{\knnFN}{904}        % missed sick cells at threshold 0.5
 \newcommand{\knnTP}{1163}
-\newcommand{\knnSensNF}{0.74}   % COMPETITION metric: sensitivity @ spec >= 95 %
+\newcommand{\knnSpecNF}{0.00}   % COMPETITION metric: specificity @ sensitivity >= 99 %
 \newcommand{\knnAUC}{0.93}
 
 \title{\textbf{Detecting the Malaria Parasite in Blood Smears with\\
@@ -173,11 +173,11 @@ against each other depending on the chosen \emph{threshold} above which a cell i
 infected; the whole trade-off is captured by the ROC curve (receiver operating characteristic)
 and summarised by the area under it (area under the curve, AUC).
 
-As the main \textbf{competition metric} we chose the \emph{sensitivity at a specificity of
-$\geq 95~\%$} --- that is, how many of the sick the model catches while allowing at most 5~\% of
-false alarms. This metric directly encodes the medical requirement of ``not missing a sick
-patient while not alarming needlessly'' and corresponds to the point on the ROC curve at a 5~\%
-false-positive rate.
+As the main \textbf{competition metric} we chose the \emph{specificity at a sensitivity of
+$\geq 99~\%$}. For a deadly disease the non-negotiable requirement is ``not missing a sick
+patient'', so we fix sensitivity high (catch at least 99~\% of the infected) and compete on who
+keeps the highest specificity, that is the fewest false alarms. This corresponds to the point on
+the ROC curve at a sensitivity of 99~\%.
 
 \subsection{Protocol}
 \label{sec:protocol}
@@ -195,23 +195,25 @@ conflict between accuracy and sensitivity: at the default threshold of $0.5$ the
 an accuracy of \knnAcc{} but a sensitivity of only \knnSens{} --- as the confusion matrix in
 \cref{fig:confusion} shows, it misses \knnFN{} of the 2067 infected cells. The high specificity
 (\knnSpec{}) thus masks the fact that the model passes nearly half of the sick; accuracy alone
-would have deceived us. Only looking at the full ROC curve (\cref{fig:roc}) reveals the model's
-true potential: the area under it is \knnAUC{}, and if we move the threshold so as to allow 5~\%
-false alarms (95~\% specificity), the sensitivity rises to \knnSensNF{}. This is our competition
-score, which you will try to beat.
+would have deceived us. The full ROC curve (\cref{fig:roc}) shows that the \emph{ranking} ability
+is not bad: the area under it is \knnAUC{}. Our competition metric is stricter, however. We
+require catching at least 99~\% of the sick, and under this constraint the specificity of $k$-NN
+drops to \knnSpecNF{} --- to catch 99~\% of the infected it would have to push the threshold so
+low that it flags nearly every cell. The simple baseline therefore fails to meet the clinical
+bar; this is exactly why a learned model is needed (your task).
 
 % --- Results table -----------------------------------------------------
 \begin{table}[t]
 \centering
 \caption{Results on the held-out test set (\Ntest{} cells). Accuracy, sensitivity and
 specificity are reported at the default threshold $0.5$; the competition metric is the
-sensitivity at a specificity of $\geq 95~\%$. Values are from a single deterministic run.}
+specificity at a sensitivity of $\geq 99~\%$. Values are from a single deterministic run.}
 \label{tab:results}
 \begin{tabular}{l S[table-format=1.2] S[table-format=1.2] S[table-format=1.2] S[table-format=1.2] S[table-format=1.2]}
 \toprule
-Method & {Accuracy} & {Sensitivity} & {Specificity} & {Sens.\,@\,spec.\,95\,\%} & {AUC} \\
+Method & {Accuracy} & {Sensitivity} & {Specificity} & {Spec.\,@\,sens.\,99\,\%} & {AUC} \\
 \midrule
-ResNet50 + $k$-NN (baseline) & 0.77 & 0.56 & 0.99 & 0.74 & 0.93 \\
+ResNet50 + $k$-NN (baseline) & 0.77 & 0.56 & 0.99 & 0.00 & 0.93 \\
 Your solution                & {--} & {--} & {--} & {--} & {--} \\
 \bottomrule
 \end{tabular}
@@ -231,9 +233,9 @@ type of error.}
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.6\linewidth]{figs/roc_baseline_en.png}
-\caption{ROC curve of the $k$-NN baseline on the test set. The marked point corresponds to the
-competition metric --- the highest sensitivity attainable at a specificity of at least 95~\%
-(i.e.\ at most 5~\% false alarms).}
+\caption{ROC curve of the $k$-NN baseline on the test set. The horizontal line marks the
+required sensitivity of 99~\%; the competition metric is the highest specificity attainable above
+that line. The baseline only reaches it at a near-100~\% false-positive rate (specificity $\approx 0$).}
 \label{fig:roc}
 \end{figure}
 
@@ -265,7 +267,7 @@ We have shown that a frozen ResNet50 used as a feature extractor, combined with 
 $k$-nearest-neighbours classifier, reaches an area under the ROC curve of \knnAUC{} on the NIH
 dataset, and we have stressed why medicine requires judging sensitivity and specificity rather
 than accuracy alone. This baseline is the starting point your solution is meant to beat ---
-in particular by raising the sensitivity while keeping the specificity high.
+in particular by keeping the specificity as high as possible at the required sensitivity of 99~\%.
 
 % =====================================================================
 % Bibliography lives in refs.bib.

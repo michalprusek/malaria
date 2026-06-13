@@ -532,39 +532,41 @@ falešných poplachů (↓ specificita). A naopak. Celý ten kompromis zachycuje
 
 Naše **soutěžní metrika** je jeden konkrétní bod na téhle křivce:
 
-> **Senzitivita při specificitě ≥ 95 %** — tedy: *kolik nemocných dokážeme zachytit, když si
-> dovolíme nanejvýš 5 % falešných poplachů?* Čím vyšší, tím lepší model.
+> **Specificita při senzitivitě ≥ 99 %** — tedy: *jak málo zdravých zbytečně poplašíme, když
+> musíme zachytit aspoň 99 % nemocných?* U smrtelné nemoci je „nepřehlédnout nemocného“ ta
+> nepodkročitelná podmínka; soutěžíme pak v tom, kdo přitom udrží nejvyšší specificitu.
+> Čím vyšší, tím lepší model.
 """))
 
 student.append(code(r"""
 from sklearn.metrics import roc_curve
 
-def senzitivita_pri_specificite(y_true, y_prob, min_spec=0.95):
-    fpr, tpr, thr = roc_curve(y_true, y_prob)          # fpr = 1 - specificita
-    ok = fpr <= (1.0 - min_spec)
-    best = int(np.argmax(np.where(ok, tpr, -1)))
-    return tpr[best], thr[best], 1 - fpr[best]
+def specificita_pri_senzitivite(y_true, y_prob, min_sens=0.99):
+    fpr, tpr, thr = roc_curve(y_true, y_prob)          # tpr = senzitivita
+    ok = tpr >= min_sens
+    best = int(np.argmin(np.where(ok, fpr, 2.0)))      # nejmenší fpr = max specificita
+    return 1 - fpr[best], thr[best], tpr[best]
 
 fpr, tpr, thr = roc_curve(y_val, val_prob)
-sens95, prah95, spec95 = senzitivita_pri_specificite(y_val, val_prob, 0.95)
+spec99, prah99, sens99 = specificita_pri_senzitivite(y_val, val_prob, 0.99)
 
 # k-NN baseline pro srovnání
 fpr_k, tpr_k, _ = roc_curve(y_val, knn_val_prob)
-sens95_knn, _, _ = senzitivita_pri_specificite(y_val, knn_val_prob, 0.95)
+spec99_knn, _, _ = specificita_pri_senzitivite(y_val, knn_val_prob, 0.99)
 
 plt.figure(figsize=(6, 6))
-plt.plot(fpr, tpr, lw=2, label=f"vaše síť (sens={sens95:.3f})")
-plt.plot(fpr_k, tpr_k, lw=2, ls="--", color="gray", label=f"k-NN baseline (sens={sens95_knn:.3f})")
-plt.axvline(0.05, ls=":", color="crimson", label="hranice 5 % falešných poplachů")
-plt.scatter([1 - spec95], [sens95], color="crimson", zorder=5)
+plt.plot(fpr, tpr, lw=2, label=f"vaše síť (spec={spec99:.3f})")
+plt.plot(fpr_k, tpr_k, lw=2, ls="--", color="gray", label=f"k-NN baseline (spec={spec99_knn:.3f})")
+plt.axhline(0.99, ls=":", color="crimson", label="požadovaná senzitivita 99 %")
+plt.scatter([1 - spec99], [sens99], color="crimson", zorder=5)
 plt.plot([0, 1], [0, 1], ls=":", color="lightgray")
 plt.xlabel("1 − specificita  (falešné poplachy)"); plt.ylabel("senzitivita")
 plt.title("ROC křivka — vaše síť vs. baseline"); plt.legend(loc="lower right"); plt.show()
 
-print(f"➡️  SOUTĚŽNÍ SKÓRE (na ověření): senzitivita @ spec≥95 % = {sens95:.3f}")
-print(f"    (odpovídající práh = {prah95:.3f}, dosažená specificita = {spec95:.3f})")
-print(f"    k-NN baseline = {sens95_knn:.3f}  →  "
-      f"{'PŘEKONÁNO! 🎉' if sens95 > sens95_knn else 'zatím ne — laďte dál'}")
+print(f"➡️  SOUTĚŽNÍ SKÓRE (na ověření): specificita @ senzitivita≥99 % = {spec99:.3f}")
+print(f"    (odpovídající práh = {prah99:.3f}, dosažená senzitivita = {sens99:.3f})")
+print(f"    k-NN baseline = {spec99_knn:.3f}  →  "
+      f"{'PŘEKONÁNO! 🎉' if spec99 > spec99_knn else 'zatím ne — laďte dál'}")
 """))
 
 student.append(md(r"""
@@ -595,7 +597,7 @@ except Exception as e:
 student.append(md(r"""
 ## 9 · Ladění pro soutěž 🔬🏆
 
-Teď zpátky nahoru a vylepšujte! Cílem je co **nejvyšší senzitivita při specificitě ≥ 95 %**
+Teď zpátky nahoru a vylepšujte! Cílem je co **nejvyšší specificita při senzitivitě ≥ 99 %**
 na skrytém testu (a samozřejmě překonat k-NN baseline). Páky, které máte k dispozici:
 
 | kde | páka | co zkusit |
@@ -611,9 +613,9 @@ na skrytém testu (a samozřejmě překonat k-NN baseline). Páky, které máte 
 **Postup:** změňte jednu věc → spusťte sekce 6, 7, 8 → podívejte se na soutěžní skóre →
 opakujte. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
 
-> 💡 Tip: nejde jen o přesnost. Když model dělá hodně falešných poplachů, „dojde mu rozpočet"
-> 5 % specificity dřív a senzitivita spadne. Hledáte model, který si je svými předpověďmi
-> **jistý ve správných případech**.
+> 💡 Tip: musíte zachytit 99 % nemocných. Když si model není jistý, musí kvůli tomu posunout
+> práh hodně nízko a označí spoustu zdravých → specificita spadne (klidně až na nulu). Hledáte
+> model, který dává **vysokou pravděpodobnost právě napadeným** buňkám a nízkou těm zdravým.
 """))
 
 student.append(md(r"""
@@ -624,7 +626,7 @@ testu** (u kterého neznáte správné odpovědi) a uložíme je do souboru `pre
 Ten odevzdejte školiteli — on spočítá vaše skóre na skrytých odpovědích a vyhlásí vítěze.
 
 > Odevzdávají se **pravděpodobnosti**, ne hotová rozhodnutí — školitel sám najde práh pro
-> specificitu 95 %. Vy se tedy nemusíte starat o volbu prahu, jen ať jsou vaše pravděpodobnosti
+> senzitivitu 99 %. Vy se tedy nemusíte starat o volbu prahu, jen ať jsou vaše pravděpodobnosti
 > co nejlépe seřazené (jisté tam, kde mají být).
 """))
 
