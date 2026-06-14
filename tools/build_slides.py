@@ -136,6 +136,38 @@ def maxpool_anim_svg():
     return "".join(p)
 
 
+def roc_anim_svg(fpr, tpr, dur="5s"):
+    """Animovaný SVG: bod sweepuje po reálné ROC (práh vysoký→nízký) a křivka se dokresluje."""
+    n = len(fpr)
+    idx = sorted(set(np.linspace(0, n - 1, 80).astype(int).tolist()))
+    L, R, T, B = 48, 332, 22, 268
+    def X(f): return L + f * (R - L)
+    def Y(t): return B - t * (B - T)
+    pts = [(X(fpr[i]), Y(tpr[i])) for i in idx]
+    d = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in pts)
+    area = d + f" L {R:.1f} {B:.1f} L {L:.1f} {B:.1f} Z"
+    p = ['<svg id="rocanim" class="svgbox" viewBox="0 0 360 300" fill="none" font-family="IBM Plex Mono">']
+    p.append(f'<path d="{area}" fill="rgba(53,214,192,.10)"/>')
+    p.append(f'<line x1="{L}" y1="{B}" x2="{R}" y2="{B}" stroke="var(--line)"/>')
+    p.append(f'<line x1="{L}" y1="{B}" x2="{L}" y2="{T}" stroke="var(--line)"/>')
+    p.append(f'<line x1="{L}" y1="{B}" x2="{R}" y2="{T}" stroke="{GRID}" stroke-dasharray="3 3"/>')
+    for v in (0, 0.5, 1):
+        p.append(f'<text x="{X(v):.0f}" y="{B+14}" fill="#8b98a8" font-size="9" text-anchor="middle">{v:g}</text>')
+        p.append(f'<text x="{L-6}" y="{Y(v)+3:.0f}" fill="#8b98a8" font-size="9" text-anchor="end">{v:g}</text>')
+    p.append(f'<text x="{(L+R)//2}" y="{B+30}" fill="#cdd6e2" font-size="10" text-anchor="middle">1 − specificita (falešné poplachy)</text>')
+    cy = (T + B) // 2
+    p.append(f'<text x="16" y="{cy}" fill="#cdd6e2" font-size="10" text-anchor="middle" transform="rotate(-90 16 {cy})">senzitivita</text>')
+    p.append(f'<text x="{X(0.55):.0f}" y="{Y(0.32):.0f}" fill="#35d6c0" font-size="11" opacity=".85" text-anchor="middle">AUC</text>')
+    p.append(f'<text x="{X(0.05):.0f}" y="{Y(0.99):.0f}" fill="#93a1b3" font-size="9">↖ ideál</text>')
+    p.append(f'<text x="{X(0.97):.0f}" y="{Y(0.06):.0f}" fill="#f0476b" font-size="9" text-anchor="end">práh: vysoký → nízký</text>')
+    p.append(f'<path id="rocp" d="{d}" stroke="#35d6c0" stroke-width="2.6" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1">'
+             f'<animate attributeName="stroke-dashoffset" from="1" to="0" dur="{dur}" repeatCount="indefinite"/></path>')
+    p.append(f'<circle r="6" fill="{CRIMSON}" stroke="white" stroke-width="1">'
+             f'<animateMotion dur="{dur}" repeatCount="indefinite"><mpath href="#rocp"/></animateMotion></circle>')
+    p.append('</svg>')
+    return "".join(p)
+
+
 # ---------- data ----------
 tr = np.load("train.npz"); te = np.load("test_features.npz"); tl = np.load("test_labels.npz")
 Xtr, ytr = tr["X"].astype(np.float32), tr["y"]
@@ -183,6 +215,7 @@ with torch.no_grad():
 fpr_m, tpr_m, _ = roc_curve(yte, p_mlp); okm = tpr_m >= 0.99; bm = int(np.argmin(np.where(okm, fpr_m, 2.0)))
 mlp_spec99 = 1 - fpr_m[bm]; mlp_auc = roc_auc_score(yte, p_mlp)
 mlp_acc = (((p_mlp >= 0.5).astype(int)) == yte).mean()
+ROC_ANIM = roc_anim_svg(fpr_m, tpr_m)   # animovaná konstrukce ROC (MLP)
 
 # ROC obě křivky; soutěžní bod = nejnižší falešné poplachy při senzitivitě >= 99 %
 fig, ax = plt.subplots(figsize=(7.0, 5.4))
@@ -675,6 +708,26 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- ROC KONSTRUKCE -->
+  <section class="slide">
+    <div class="wrap grid2">
+      <div>
+        <div class="kicker reveal" style="--i:0">Metriky · ROC</div>
+        <h2 class="reveal" style="--i:1">Jak vzniká<br>ROC křivka</h2>
+        <ul class="list">
+          <li class="reveal" style="--i:2"><span>Model nevydává „ano/ne", ale <strong>pravděpodobnost</strong> — musíme zvolit <strong>práh</strong>.</span></li>
+          <li class="reveal" style="--i:3"><span>Každý práh dá jednu matici záměn → jeden <strong>bod</strong> (1−specificita, senzitivita) = (falešné poplachy, záchyt nemocných).</span></li>
+          <li class="reveal" style="--i:4"><span><strong>Posouváme práh</strong> od vysokého (vlevo dole) k nízkému (vpravo nahoře) — spojením bodů vznikne <span class="teal">ROC křivka</span>.</span></li>
+          <li class="reveal" style="--i:5"><span>Čím blíž <strong>levému hornímu rohu</strong>, tím lépe. <strong>AUC</strong> = plocha pod křivkou (1 = dokonalé, 0,5 = náhoda).</span></li>
+        </ul>
+      </div>
+      <div class="reveal" style="--i:3">
+        __ROC_ANIM__
+        <button class="animbtn" id="rocbtn" type="button">⏸ Pozastavit</button>
+      </div>
+    </div>
+  </section>
+
   <!-- 10 METRIKY / ROC -->
   <section class="slide">
     <div class="wrap grid2">
@@ -832,13 +885,13 @@ function toggleAnim(s,b){
   if(s._paused){s.pauseAnimations(); if(b) b.textContent='▶ Spustit';}
   else{s.unpauseAnimations(); if(b) b.textContent='⏸ Pozastavit';}
 }
-[['convanim','convbtn'],['poolanim','poolbtn']].forEach(([sid,bid])=>{
+[['convanim','convbtn'],['poolanim','poolbtn'],['rocanim','rocbtn']].forEach(([sid,bid])=>{
   const s=document.getElementById(sid), b=document.getElementById(bid);
   if(s&&b) b.addEventListener('click',()=>toggleAnim(s,b));
 });
 addEventListener('keydown',e=>{
   if(e.key==='p'||e.key==='P'){
-    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim');
+    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim, .slide.active #rocanim');
     if(s) toggleAnim(s, s.parentElement.querySelector('.animbtn'));
   }
 });
@@ -852,6 +905,7 @@ for k, v in vals.items():
     HTML = HTML.replace("__" + k + "__", v)
 HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64).replace("__PROBE__", PROBE_B64)
 HTML = HTML.replace("__CONV_SVG__", conv_anim_svg()).replace("__POOL_SVG__", maxpool_anim_svg())
+HTML = HTML.replace("__ROC_ANIM__", ROC_ANIM)
 HTML = HTML.replace("__RESNET_SVG__", "data:image/svg+xml;base64," + base64.b64encode(open("figs/resnet18_d2l_rotated.svg", "rb").read()).decode())
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
 
