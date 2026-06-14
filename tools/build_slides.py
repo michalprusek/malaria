@@ -317,32 +317,34 @@ ax.text(0.5, 0.965, "požadovaná senzitivita 99 %", color=CRIMSON, fontsize=10,
 style_axes(ax)
 ROC_B64 = fig_to_b64(fig)
 
-# ---------- linear probe: 2048 -> 2 skóre (učená lineární projekce) ----------
-ytr_long = torch.tensor(ytr, dtype=torch.long)
-probe = nn.Linear(2048, 2)
+# ---------- linear probe: 2048 -> 1 skóre (učená lineární projekce do 1D) ----------
+ytr1 = torch.tensor(ytr, dtype=torch.float32)
+probe = nn.Linear(2048, 1)
 op = torch.optim.Adam(probe.parameters(), lr=1e-3, weight_decay=1e-4)
-cef = nn.CrossEntropyLoss()
-for ep in range(20):
+bce = nn.BCEWithLogitsLoss()
+for ep in range(25):
     probe.train(); perm = torch.randperm(len(Xtr_t))
     for i in range(0, len(Xtr_t), 256):
-        j = perm[i:i + 256]; op.zero_grad(); cef(probe(Xtr_t[j]), ytr_long[j]).backward(); op.step()
+        j = perm[i:i + 256]; op.zero_grad(); bce(probe(Xtr_t[j]).squeeze(1), ytr1[j]).backward(); op.step()
 probe.eval()
 with torch.no_grad():
-    z = probe(Xte_t).numpy()
-probe_acc = (z.argmax(1) == yte).mean()
-sidx = np.random.choice(len(z), 2200, replace=False)
-zz, yz = z[sidx], yte[sidx]
-fig, ax = plt.subplots(figsize=(7.2, 5.4))
-ax.scatter(zz[yz == 0, 0], zz[yz == 0, 1], s=9, alpha=0.45, c=TEAL, label="zdravá", edgecolors="none")
-ax.scatter(zz[yz == 1, 0], zz[yz == 1, 1], s=9, alpha=0.45, c=CRIMSON, label="napadená", edgecolors="none")
-lim = [float(zz.min()), float(zz.max())]
-ax.plot(lim, lim, ls="--", color=MUTED, lw=1.4, label="dělící čára")
-ax.set_xlabel("skóre: zdravá"); ax.set_ylabel("skóre: napadená")
-leg = ax.legend(loc="upper left", frameon=False, fontsize=12)
+    score = probe(Xte_t).squeeze(1).numpy()       # 1D skóre (logit)
+probe_acc = ((score > 0).astype(int) == yte).mean()
+fig, ax = plt.subplots(figsize=(7.6, 3.4))
+ip = np.random.choice(len(score), 2600, replace=False)
+sc, yc = score[ip], yte[ip]
+jit = (np.random.rand(len(sc)) - 0.5) * 0.9        # malý rozptyl, ať body na přímce nesplynou
+ax.axhline(0, color=GRID, lw=1.2)                  # přímka skóre
+ax.scatter(sc[yc == 0], jit[yc == 0], s=11, alpha=0.30, c=TEAL, edgecolors="none", label="zdravá")
+ax.scatter(sc[yc == 1], jit[yc == 1], s=11, alpha=0.30, c=CRIMSON, edgecolors="none", label="napadená")
+ax.axvline(0, ls="--", color="#eaf0f7", lw=1.5, label="práh rozhodnutí")
+ax.set_xlabel("skóre lineárního probu  (vlevo → zdravá, vpravo → napadená)")
+ax.set_yticks([]); ax.set_ylim(-1.0, 2.4)
+leg = ax.legend(loc="upper center", frameon=False, fontsize=12, ncol=3)
 for t in leg.get_texts(): t.set_color(INK)
-style_axes(ax); ax.grid(False)
+style_axes(ax); ax.grid(False); ax.spines["left"].set_visible(False)
 PROBE_B64 = fig_to_b64(fig)
-print(f"linear probe: acc={probe_acc:.3f}")
+print(f"linear probe (1D): acc={probe_acc:.3f}")
 
 # ---------- vzorové buňky ----------
 inf = sorted(glob.glob("samples/Parasitized/*.png"))[0]
@@ -745,10 +747,10 @@ strong{color:#fff;font-weight:600}
       <div>
         <div class="kicker reveal" style="--i:0">Učená projekce · linear probe</div>
         <h2 class="reveal" style="--i:1">I jediná lineární<br>vrstva třídy oddělí</h2>
-        <p class="reveal" style="--i:2">PCA i t-SNE kreslily featury <strong>naslepo</strong>. Teď necháme <strong>jedinou lineární vrstvu</strong> (2048 → 2 skóre) naučit se přímo z labelů — tzv. <em>linear probe</em>.</p>
-        <p class="reveal" style="--i:3;margin-top:.8rem">Je to nejjednodušší <strong>učený</strong> model: featury jen zváží a sečte. A přesto trefí <span class="teal tt">__PROBE_ACC__</span> přesnost — featury z ResNetu jsou totiž skoro <strong>lineárně oddělitelné</strong>. Bod nad čarou = vyšší skóre pro „napadená".</p>
+        <p class="reveal" style="--i:2">PCA i t-SNE kreslily featury <strong>naslepo</strong>. Teď necháme <strong>jedinou lineární vrstvu</strong> (2048 → <strong>1 skóre</strong>) naučit se přímo z labelů — tzv. <em>linear probe</em>.</p>
+        <p class="reveal" style="--i:3;margin-top:.8rem">Je to nejjednodušší <strong>učený</strong> model: featury jen zváží a sečte do <strong>jednoho čísla</strong>. A přesto trefí <span class="teal tt">__PROBE_ACC__</span> přesnost — featury z ResNetu jsou totiž skoro <strong>lineárně oddělitelné</strong>. Vlevo od prahu → „zdravá", vpravo → „napadená".</p>
       </div>
-      <div class="figframe reveal" style="--i:3"><img src="__PROBE__" alt="linear probe — 2D projekce"></div>
+      <div class="figframe reveal" style="--i:3"><img src="__PROBE__" alt="linear probe — 1D skóre"></div>
     </div>
   </section>
 
