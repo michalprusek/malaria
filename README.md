@@ -157,8 +157,8 @@ Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co
   **deterministické pořadí obrázků** (řazeno podle názvu souboru → stejný split na každém stroji).
 - **Baseline = k-NN** (k=31, vážený vzdáleností, na standardizovaných featurech): AUC ≈ 0,93,
   ale soutěžní metrika **specificita @ senzitivita ≥ 99 % = 0,00** — aby chytil 99 % nemocných,
-  musel by označit skoro všechny (prokletí dimenzionality). Na klinickou laťku tedy nedosáhne,
-  což přesně motivuje učený model.
+  musel by označit skoro všechny (prokletí dimenzionality). Senzitivitu 99 % tedy splní, ale
+  s nulovou specificitou (prakticky bezcenně), což přesně motivuje učený model.
 - **Trénovaná hlava** (malá MLP v PyTorch, `BCEWithLogitsLoss`, Adam): AUC ≈ 0,98 a
   **specificita ≈ 0,63 @ senzitivita 99 %** — výrazně překoná baseline.
 - Notebooky i scoring byly otestovány spuštěním end-to-end; featury byly extrahovány a

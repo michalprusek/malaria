@@ -455,8 +455,10 @@ student.append(md(r"""
 
 Z pravděpodobnosti uděláme rozhodnutí až **prahem**. Práh 0,5 není svatý — volíme ho podle
 cíle. My chceme zachytit **aspoň 99 % nemocných**, takže práh *snižujeme*, dokud senzitivita
-nevyleze na 99 % (na **ověřovací** sadě, nikdy na testu!). Uvidíme, že u k-NN přitom specificita
-spadne skoro k nule — proto baseline na tu laťku nedosáhne.
+nevyleze na 99 % (na **ověřovací** sadě, nikdy na testu!). Pozor — **99 % záchytu k-NN splní**
+(stačí dát práh skoro na nulu, pak označí za napadené skoro vše). Jenže tím označí i skoro
+všechny zdravé, takže jeho **specificita v tom bodě spadne skoro k nule** — soutěžní skóre je
+proto ≈ 0. Není to „nedosáhne", ale „na laťce skóruje nulu".
 """))
 
 student.append(code(r"""

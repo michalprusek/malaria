@@ -205,8 +205,9 @@ polovinu nemocných; samotná přesnost by nás obelhala. Teprve pohled na celou
 (\cref{fig:roc}) ukazuje, že schopnost \emph{seřadit} buňky není špatná: plocha pod ní je
 \knnAUC{}. Naše soutěžní metrika je ale přísnější. Požadujeme zachytit aspoň 99~\% nemocných,
 a~při této podmínce klesá specificita $k$-NN na \knnSpecNF{} --- aby chytil 99~\% napadených,
-musel by práh posunout tak nízko, že označí prakticky všechny buňky. Jednoduchý baseline tedy
-na klinickou laťku nedosáhne; právě to je důvod naučit lepší model (váš úkol).
+musel by práh posunout tak nízko, že označí prakticky všechny buňky. Požadovanou senzitivitu
+tedy $k$-NN splní, ale s~nulovou specificitou --- tedy prakticky bezcenně; právě to je důvod
+naučit lepší model (váš úkol).
 
 % --- Tabulka výsledků --------------------------------------------------
 \begin{table}[t]

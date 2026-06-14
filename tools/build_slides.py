@@ -820,7 +820,7 @@ strong{color:#fff;font-weight:600}
             <div class="track"><div class="fill mlp" style="--v:__MLP_SPEC_PCT__%"></div></div>
           </div>
         </div>
-        <p style="margin-top:1rem">k-NN na laťku 99% záchytu <strong>vůbec nedosáhne</strong> (specificita <span class="tt">__KNN_SPEC__</span>) — musel by hlásit skoro všechny. MLP udrží <span class="teal tt">__MLP_SPEC__</span>. <strong>Baseline překonán.</strong></p>
+        <p style="margin-top:1rem">k-NN sice 99 % nemocných <strong>zachytí</strong>, ale jen když označí skoro všechny → specificita <span class="tt">__KNN_SPEC__</span>. MLP přitom udrží <span class="teal tt">__MLP_SPEC__</span>. <strong>Baseline překonán.</strong></p>
       </div>
     </div>
   </section>

@@ -199,8 +199,9 @@ would have deceived us. The full ROC curve (\cref{fig:roc}) shows that the \emph
 is not bad: the area under it is \knnAUC{}. Our competition metric is stricter, however. We
 require catching at least 99~\% of the sick, and under this constraint the specificity of $k$-NN
 drops to \knnSpecNF{} --- to catch 99~\% of the infected it would have to push the threshold so
-low that it flags nearly every cell. The simple baseline therefore fails to meet the clinical
-bar; this is exactly why a learned model is needed (your task).
+low that it flags nearly every cell. The $k$-NN therefore does satisfy the required sensitivity,
+but only at essentially zero specificity --- practically useless; this is exactly why a learned
+model is needed (your task).
 
 % --- Results table -----------------------------------------------------
 \begin{table}[t]
