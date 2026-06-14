@@ -351,9 +351,55 @@ print("připraveno:", Xtr.shape, "na zařízení", device)
 """))
 
 student.append(md(r"""
-## 5 · Baseline: k nejbližších sousedů (k-NN)
+## 5 · Lineární projekce do 2D (linear probe)
 
-Než navrhneme vlastní síť, postavíme **co nejjednodušší model** — laťku, kterou se pak budeme
+PCA jsme dělali „naslepo“ — bez znalosti správných odpovědí. Teď zkusíme opak: necháme
+**jedinou lineární vrstvu** naučit se z 2048 featur **dvě čísla** (skóre pro „zdravá“ a pro
+„napadená“) přímo z labelů. Tomu se říká **linear probe** — lineární klasifikátor nasazený na
+zmrazené featury. Je to nejjednodušší *učený* model: featury jen zváží a sečte.
+
+Uvidíme, že i tahle jediná vrstva třídy slušně oddělí — a dostaneme názorný 2D obrázek
+s **dělící čarou** (tam, kde se obě skóre rovnají).
+"""))
+
+student.append(code(r"""
+ytr_long = torch.tensor(y_train, dtype=torch.long, device=device)
+
+probe = nn.Linear(Xtr.shape[1], 2).to(device)        # 2048 featur → 2 skóre (zdravá, napadená)
+opt_p = torch.optim.Adam(probe.parameters(), lr=1e-3, weight_decay=1e-4)
+ce = nn.CrossEntropyLoss()
+for epoch in range(15):
+    probe.train()
+    perm = torch.randperm(Xtr.shape[0], device=device)
+    for i in range(0, Xtr.shape[0], 256):
+        idx = perm[i:i + 256]
+        opt_p.zero_grad()
+        ce(probe(Xtr[idx]), ytr_long[idx]).backward()
+        opt_p.step()
+
+probe.eval()
+with torch.no_grad():
+    z_val = probe(Xva).cpu().numpy()                 # 2D skóre pro ověřovací buňky
+probe_acc = (z_val.argmax(1) == y_val).mean()
+print(f"Linear probe — přesnost na ověření: {probe_acc:.4f}")
+"""))
+
+student.append(code(r"""
+plt.figure(figsize=(7, 6))
+for label, name, col in [(0, "zdravá", "seagreen"), (1, "napadená", "crimson")]:
+    m = y_val == label
+    plt.scatter(z_val[m, 0], z_val[m, 1], s=8, alpha=0.4, color=col, label=name)
+lim = [float(z_val.min()), float(z_val.max())]
+plt.plot(lim, lim, ls="--", color="gray", label="dělící čára (skóre stejné)")
+plt.xlabel("skóre: zdravá"); plt.ylabel("skóre: napadená")
+plt.legend(); plt.title(f"Linear probe — 2D projekce (přesnost {probe_acc:.3f})")
+plt.show()
+"""))
+
+student.append(md(r"""
+## 6 · Druhý baseline: k nejbližších sousedů (k-NN)
+
+Vedle lineárního probu zkusíme i **model úplně bez učení** — další laťku, kterou se pak budeme
 snažit překonat. Použijeme **k-NN** (*k nearest neighbors*, k nejbližších sousedů):
 
 > Chceš zařadit novou buňku? Najdi mezi trénovacími buňkami **k nejpodobnějších** (nejbližších
@@ -381,9 +427,9 @@ print("To je laťka. V dalších sekcích ji zkusíme překonat vlastní neurono
 """))
 
 student.append(md(r"""
-## 6 · Vaše vlastní klasifikační hlava 🔬
+## 7 · Vaše vlastní klasifikační hlava 🔬
 
-Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**, která má překonat k-NN
+Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**, která má překonat oba
 baseline. Dostane na vstupu 2048 featur a na výstupu vydá jediné číslo (*logit*), které po
 převedení funkcí *sigmoid* říká **pravděpodobnost, že je buňka napadená**.
 
@@ -414,7 +460,7 @@ print("počet trénovaných vah:", sum(p.numel() for p in model.parameters()))
 """))
 
 student.append(md(r"""
-## 7 · Trénink 🔬
+## 8 · Trénink 🔬
 
 Trénink znamená: model hádá, porovnáme jeho odhad se správnou odpovědí, spočítáme **chybu**
 (*loss*) a malými krůčky vahy upravíme, aby chyba klesala. Jeden průchod všemi daty = jedna
@@ -426,7 +472,7 @@ Páky, se kterými si můžete hrát:
 - `WEIGHT_DECAY` — mírná penalizace velkých vah, brání přeučení,
 - `POS_WEIGHT` — **jak draho stojí přehlédnutý nemocný**. Hodnota > 1 nutí model brát napadené
   buňky vážněji (zvýší senzitivitu na úkor falešných poplachů). To je přímo páka na medicínský
-  kompromis, o kterém bude řeč v sekci 8!
+  kompromis, o kterém bude řeč v sekci 9!
 """))
 
 student.append(code(r"""
@@ -476,7 +522,7 @@ plt.tight_layout(); plt.show()
 """))
 
 student.append(md(r"""
-## 8 · Proč v medicíně nestačí „95 % přesnost" 🩺
+## 9 · Proč v medicíně nestačí „95 % přesnost" 🩺
 
 Představte si model, který o **každé** buňce řekne „zdravá". Když je v nátěru 95 % buněk
 zdravých, má tenhle hloupý model rovnou **95 % přesnost** — a přitom **nezachytí ani jednoho
@@ -595,22 +641,22 @@ except Exception as e:
 """))
 
 student.append(md(r"""
-## 9 · Ladění pro soutěž 🔬🏆
+## 10 · Ladění pro soutěž 🔬🏆
 
 Teď zpátky nahoru a vylepšujte! Cílem je co **nejvyšší specificita při senzitivitě ≥ 99 %**
-na skrytém testu (a samozřejmě překonat k-NN baseline). Páky, které máte k dispozici:
+na skrytém testu (a samozřejmě překonat baseline). Páky, které máte k dispozici:
 
 | kde | páka | co zkusit |
 |---|---|---|
-| sekce 5 | `K` u k-NN | jiný počet sousedů — posune baseline (zkuste, jestli k-NN vůbec dotáhnete) |
-| sekce 6 | architektura hlavy | větší `hidden`, jiný `dropout`, další vrstvy |
-| sekce 7 | `EPOCHS` | víc epoch — ale pozor na přeučení (sledujte ověření) |
-| sekce 7 | `LR` | např. 3e-4, 1e-3, 3e-3 |
-| sekce 7 | `WEIGHT_DECAY` | větší hodnota brzdí přeučení |
-| sekce 7 | `POS_WEIGHT` | > 1 zvýší senzitivitu (přísnější na nemocné) |
+| sekce 6 | `K` u k-NN | jiný počet sousedů — posune baseline (zkuste, jestli k-NN vůbec dotáhnete) |
+| sekce 7 | architektura hlavy | větší `hidden`, jiný `dropout`, další vrstvy |
+| sekce 8 | `EPOCHS` | víc epoch — ale pozor na přeučení (sledujte ověření) |
+| sekce 8 | `LR` | např. 3e-4, 1e-3, 3e-3 |
+| sekce 8 | `WEIGHT_DECAY` | větší hodnota brzdí přeučení |
+| sekce 8 | `POS_WEIGHT` | > 1 zvýší senzitivitu (přísnější na nemocné) |
 | sekce 4 | standardizace | už zapnutá — zkuste, jaký je rozdíl bez ní |
 
-**Postup:** změňte jednu věc → spusťte sekce 6, 7, 8 → podívejte se na soutěžní skóre →
+**Postup:** změňte jednu věc → spusťte sekce 7, 8, 9 → podívejte se na soutěžní skóre →
 opakujte. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
 
 > 💡 Tip: musíte zachytit 99 % nemocných. Když si model není jistý, musí kvůli tomu posunout
@@ -619,7 +665,7 @@ opakujte. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
 """))
 
 student.append(md(r"""
-## 10 · Odevzdání do soutěže 📤
+## 11 · Odevzdání do soutěže 📤
 
 Až budete s modelem spokojení, vygenerujte odevzdání. Spočítáme pravděpodobnosti na **skrytém
 testu** (u kterého neznáte správné odpovědi) a uložíme je do souboru `predikce_<TÝM>.csv`.

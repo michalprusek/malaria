@@ -117,6 +117,33 @@ ax.text(0.5, 0.965, "požadovaná senzitivita 99 %", color=CRIMSON, fontsize=10,
 style_axes(ax)
 ROC_B64 = fig_to_b64(fig)
 
+# ---------- linear probe: 2048 -> 2 skóre (učená lineární projekce) ----------
+ytr_long = torch.tensor(ytr, dtype=torch.long)
+probe = nn.Linear(2048, 2)
+op = torch.optim.Adam(probe.parameters(), lr=1e-3, weight_decay=1e-4)
+cef = nn.CrossEntropyLoss()
+for ep in range(20):
+    probe.train(); perm = torch.randperm(len(Xtr_t))
+    for i in range(0, len(Xtr_t), 256):
+        j = perm[i:i + 256]; op.zero_grad(); cef(probe(Xtr_t[j]), ytr_long[j]).backward(); op.step()
+probe.eval()
+with torch.no_grad():
+    z = probe(Xte_t).numpy()
+probe_acc = (z.argmax(1) == yte).mean()
+sidx = np.random.choice(len(z), 2200, replace=False)
+zz, yz = z[sidx], yte[sidx]
+fig, ax = plt.subplots(figsize=(7.2, 5.4))
+ax.scatter(zz[yz == 0, 0], zz[yz == 0, 1], s=9, alpha=0.45, c=TEAL, label="zdravá", edgecolors="none")
+ax.scatter(zz[yz == 1, 0], zz[yz == 1, 1], s=9, alpha=0.45, c=CRIMSON, label="napadená", edgecolors="none")
+lim = [float(zz.min()), float(zz.max())]
+ax.plot(lim, lim, ls="--", color=MUTED, lw=1.4, label="dělící čára")
+ax.set_xlabel("skóre: zdravá"); ax.set_ylabel("skóre: napadená")
+leg = ax.legend(loc="upper left", frameon=False, fontsize=12)
+for t in leg.get_texts(): t.set_color(INK)
+style_axes(ax); ax.grid(False)
+PROBE_B64 = fig_to_b64(fig)
+print(f"linear probe: acc={probe_acc:.3f}")
+
 # ---------- vzorové buňky ----------
 inf = sorted(glob.glob("samples/Parasitized/*.png"))[0]
 hea = sorted(glob.glob("samples/Uninfected/*.png"))[0]
@@ -135,6 +162,7 @@ vals = dict(
     TN=str(tn), FP=str(fp), FN=str(fn), TP=str(tp),
     KNN_SPEC_PCT=str(round(knn_spec99 * 100)),
     MLP_SPEC_PCT=str(round(mlp_spec99 * 100)),
+    PROBE_ACC=f"{probe_acc:.2f}".replace(".", ","),
 )
 
 # =====================================================================
@@ -556,6 +584,19 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- LINEAR PROBE -->
+  <section class="slide">
+    <div class="wrap grid2">
+      <div>
+        <div class="kicker reveal" style="--i:0">Učená projekce · linear probe</div>
+        <h2 class="reveal" style="--i:1">I jediná lineární<br>vrstva třídy oddělí</h2>
+        <p class="reveal" style="--i:2">PCA i t-SNE kreslily featury <strong>naslepo</strong>. Teď necháme <strong>jedinou lineární vrstvu</strong> (2048 → 2 skóre) naučit se přímo z labelů — tzv. <em>linear probe</em>.</p>
+        <p class="reveal" style="--i:3;margin-top:.8rem">Je to nejjednodušší <strong>učený</strong> model: featury jen zváží a sečte. A přesto trefí <span class="teal tt">__PROBE_ACC__</span> přesnost — featury z ResNetu jsou totiž skoro <strong>lineárně oddělitelné</strong>. Bod nad čarou = vyšší skóre pro „napadená".</p>
+      </div>
+      <div class="figframe reveal" style="--i:3"><img src="__PROBE__" alt="linear probe — 2D projekce"></div>
+    </div>
+  </section>
+
   <!-- 9 kNN -->
   <section class="slide">
     <div class="wrap grid2">
@@ -701,7 +742,7 @@ go(0);
 
 for k, v in vals.items():
     HTML = HTML.replace("__" + k + "__", v)
-HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64)
+HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64).replace("__PROBE__", PROBE_B64)
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
 
 with open("prezentace.html", "w", encoding="utf-8") as f:

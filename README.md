@@ -89,10 +89,10 @@ přesunu dat jinam.)*
 | 09:15–10:00 | Úvod: malárie + základy DL a transfer learningu | (výklad / sekce 0) |
 | 10:00–10:30 | Setup Colabu, získání dat, prohlídka buněk | sekce 1–2 |
 | 10:30–11:00 | Encoder, featury, **PCA vizualizace** (aha moment) | sekce 3 |
-| 11:00–11:45 | První hlava + trénink + přesnost | sekce 4–6 |
+| 11:00–11:45 | Baseline (linear probe, k-NN) + první hlava + trénink | sekce 5–8 |
 | 11:45–12:30 | Oběd | — |
-| 12:30–13:15 | **Medicínské metriky**: matice záměn, senzitivita/specificita, ROC, práh | sekce 7 |
-| 13:15–15:00 | 🏆 **SOUTĚŽ**: týmy ladí a odevzdávají | sekce 8–9 |
+| 12:30–13:15 | **Medicínské metriky**: matice záměn, senzitivita/specificita, ROC, práh | sekce 9 |
+| 13:15–15:00 | 🏆 **SOUTĚŽ**: týmy ladí a odevzdávají | sekce 10–11 |
 | 15:00–15:30 | Vyhodnocení na skrytém testu, vyhlášení, diskuse | `score_submission` |
 
 ---
@@ -122,13 +122,14 @@ nemocného" nepodkročitelná podmínka, proto fixujeme senzitivitu vysoko a sou
 
 ## 🔬 Páky, se kterými studenti experimentují
 
-Notebook staví **k-NN baseline (sekce 5)** a pak ho studenti překonávají **vlastní
-neuronovou hlavou**. Páky vyznačené `# 🔬 EXPERIMENT`:
+Notebook staví dva baseline — **linear probe (sekce 5)** a **k-NN (sekce 6)** — a pak je
+studenti překonávají **vlastní neuronovou hlavou**. Páky vyznačené `# 🔬 EXPERIMENT`:
 
-- **`K` u k-NN** (sekce 5): počet hlasujících sousedů — posune baseline,
-- **architektura hlavy** (sekce 6): počet a šířka vrstev, `dropout`,
-- **`EPOCHS`, `LR`, `WEIGHT_DECAY`** (sekce 7): délka a tempo učení, regularizace,
-- **`POS_WEIGHT`** (sekce 7): jak draho stojí přehlédnutý nemocný — přímá páka na senzitivitu,
+- **linear probe** (sekce 5): učená lineární projekce 2048 → 2D; názorný 2D obrázek + lineární baseline,
+- **`K` u k-NN** (sekce 6): počet hlasujících sousedů — posune baseline,
+- **architektura hlavy** (sekce 7): počet a šířka vrstev, `dropout`,
+- **`EPOCHS`, `LR`, `WEIGHT_DECAY`** (sekce 8): délka a tempo učení, regularizace,
+- **`POS_WEIGHT`** (sekce 8): jak draho stojí přehlédnutý nemocný — přímá páka na senzitivitu,
 - **standardizace featur** (sekce 4): zapnutá; lze ukázat rozdíl bez ní.
 
 Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co pomohlo.
