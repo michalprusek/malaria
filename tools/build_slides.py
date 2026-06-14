@@ -170,8 +170,7 @@ def roc_anim_svg(fpr, tpr, steps, dur="9s"):
     p.append(f'<text x="14" y="{(T+B)//2}" fill="#cdd6e2" font-size="9" text-anchor="middle" transform="rotate(-90 14 {(T+B)//2})">senzitivita</text>')
     p.append(f'<text x="{X(0.55):.0f}" y="{Y(0.3):.0f}" fill="#35d6c0" font-size="11" opacity=".85" text-anchor="middle">AUC</text>')
     p.append(f'<text x="{X(0.05):.0f}" y="{Y(0.99):.0f}" fill="#93a1b3" font-size="9">↖ ideál</text>')
-    p.append(f'<path d="{d}" stroke="#35d6c0" stroke-width="2.6" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1">'
-             f'<animate attributeName="stroke-dashoffset" from="1" to="0" dur="{dur}" repeatCount="indefinite"/></path>')
+    p.append(f'<path d="{d}" stroke="#35d6c0" stroke-width="2.6"/>')  # statická křivka (bez kreslicí animace)
     # skákající bod (diskrétně přes operační body — přesně odpovídá matici)
     cxv = ";".join(f"{X(s['fpr']):.1f}" for s in steps)
     cyv = ";".join(f"{Y(s['tpr']):.1f}" for s in steps)
@@ -931,7 +930,6 @@ strong{color:#fff;font-weight:600}
           </div>
         </div>
       </div>
-      <p class="foot reveal" style="--i:6;text-align:center;margin-top:1.5rem">Materiály a notebook: <span class="teal">github.com/michalprusek/malaria</span> &nbsp;·&nbsp; Michal Průšek &amp; Michal Bělohlávek</p>
     </div>
   </section>
 
