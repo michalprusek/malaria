@@ -289,6 +289,9 @@ strong{color:#fff;font-weight:600}
   background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.01))}
 .figframe{border-radius:16px;overflow:hidden;border:1px solid var(--line);background:rgba(0,0,0,.25)}
 .figframe img{display:block;width:100%}
+.lightcard{background:#f4f7fb;border-radius:16px;padding:14px;display:flex;justify-content:center;border:1px solid var(--line)}
+.lightcard img{display:block;height:min(60vh,500px);width:auto;max-width:100%}
+.cap{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-align:center;margin-top:.55rem}
 
 /* vzorové buňky */
 .cells{display:flex;gap:1.4rem;flex-wrap:wrap}
@@ -468,89 +471,17 @@ strong{color:#fff;font-weight:600}
   <section class="slide">
     <div class="wrap">
       <div class="kicker reveal" style="--i:0">Encoder · architektura</div>
-      <h2 class="reveal" style="--i:1">Architektura ResNet-50</h2>
-      <div class="reveal" style="--i:2;margin:.7rem auto 0;max-width:860px">
-        <svg class="svgbox" viewBox="0 0 580 132" fill="none" font-family="IBM Plex Mono">
-          <defs>
-            <linearGradient id="gst" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0" stop-color="#1ea08f"/><stop offset="1" stop-color="#35d6c0"/></linearGradient>
-            <marker id="ar" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-              <path d="M0 0 L5 3 L0 6 z" fill="#5b6675"/></marker>
-          </defs>
-          <g stroke="#5b6675" stroke-width="1.3">
-            <line x1="42" y1="56" x2="50" y2="56" marker-end="url(#ar)"/>
-            <line x1="96" y1="56" x2="104" y2="56" marker-end="url(#ar)"/>
-            <line x1="142" y1="56" x2="150" y2="56" marker-end="url(#ar)"/>
-            <line x1="192" y1="56" x2="200" y2="56" marker-end="url(#ar)"/>
-            <line x1="244" y1="56" x2="252" y2="56" marker-end="url(#ar)"/>
-            <line x1="296" y1="56" x2="304" y2="56" marker-end="url(#ar)"/>
-            <line x1="346" y1="56" x2="354" y2="56" marker-end="url(#ar)"/>
-            <line x1="392" y1="56" x2="400" y2="56" marker-end="url(#ar)"/>
-          </g>
-          <!-- vstup, stem, pool -->
-          <rect x="4" y="32" width="38" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
-          <text x="23" y="59" fill="#cdd6e2" font-size="9" text-anchor="middle">224²</text>
-          <rect x="50" y="32" width="46" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
-          <text x="73" y="54" fill="#cdd6e2" font-size="8.5" text-anchor="middle">7×7</text>
-          <text x="73" y="65" fill="#93a1b3" font-size="8" text-anchor="middle">stem /2</text>
-          <rect x="104" y="32" width="38" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
-          <text x="123" y="59" fill="#93a1b3" font-size="8.5" text-anchor="middle">pool</text>
-          <!-- 4 etapy: výška klesá (rozlišení), kanály rostou -->
-          <g text-anchor="middle">
-            <rect x="150" y="22" width="42" height="68" rx="5" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.45)"/>
-            <text x="171" y="60" fill="#eaf0f7" font-size="13">×3</text>
-            <text x="171" y="104" fill="#93a1b3" font-size="9">256</text>
-            <rect x="200" y="30" width="44" height="52" rx="5" fill="rgba(53,214,192,.12)" stroke="rgba(53,214,192,.45)"/>
-            <text x="222" y="60" fill="#eaf0f7" font-size="13">×4</text>
-            <text x="222" y="104" fill="#93a1b3" font-size="9">512</text>
-            <rect x="252" y="36" width="44" height="40" rx="5" fill="rgba(53,214,192,.14)" stroke="rgba(53,214,192,.45)"/>
-            <text x="274" y="60" fill="#eaf0f7" font-size="13">×6</text>
-            <text x="274" y="104" fill="#93a1b3" font-size="9">1024</text>
-            <rect x="304" y="42" width="42" height="28" rx="5" fill="rgba(53,214,192,.16)" stroke="rgba(53,214,192,.45)"/>
-            <text x="325" y="60" fill="#eaf0f7" font-size="13">×3</text>
-            <text x="325" y="104" fill="#93a1b3" font-size="9">2048</text>
-          </g>
-          <text x="248" y="14" fill="#93a1b3" font-size="9" text-anchor="middle">4 etapy reziduálních bloků</text>
-          <!-- GAP a výstup -->
-          <rect x="354" y="32" width="46" height="48" rx="5" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
-          <text x="377" y="54" fill="#cdd6e2" font-size="8.5" text-anchor="middle">global</text>
-          <text x="377" y="65" fill="#93a1b3" font-size="8" text-anchor="middle">avg pool</text>
-          <rect x="400" y="34" width="118" height="44" rx="7" fill="url(#gst)"/>
-          <text x="459" y="60" fill="#06231f" font-size="14" font-weight="600" text-anchor="middle">2048-D</text>
-          <text x="459" y="96" fill="#93a1b3" font-size="9" text-anchor="middle">(fc 1000 odřízneme)</text>
-        </svg>
-      </div>
-      <div class="grid2" style="margin-top:.6rem">
-        <div class="reveal" style="--i:3">
-          <svg class="svgbox" style="max-width:380px" viewBox="0 0 380 150" fill="none" font-family="IBM Plex Mono">
-            <defs><marker id="ar2" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
-              <path d="M0 0 L5 3 L0 6 z" fill="#5b6675"/></marker>
-            <marker id="ar3" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
-              <path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>
-            <circle cx="26" cy="84" r="15" fill="rgba(255,255,255,.06)" stroke="var(--line)"/>
-            <text x="26" y="88" fill="#cdd6e2" font-size="13" text-anchor="middle">x</text>
-            <g stroke="#5b6675" stroke-width="1.3">
-              <line x1="42" y1="84" x2="76" y2="84" marker-end="url(#ar2)"/>
-              <line x1="162" y1="84" x2="186" y2="84" marker-end="url(#ar2)"/>
-              <line x1="272" y1="84" x2="294" y2="84" marker-end="url(#ar2)"/>
-            </g>
-            <rect x="78" y="64" width="84" height="40" rx="8" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.4)"/>
-            <text x="120" y="81" fill="#cdd6e2" font-size="9.5" text-anchor="middle">3×3 konv</text>
-            <text x="120" y="94" fill="#93a1b3" font-size="9.5" text-anchor="middle">+ ReLU</text>
-            <rect x="188" y="64" width="84" height="40" rx="8" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.4)"/>
-            <text x="230" y="87" fill="#cdd6e2" font-size="9.5" text-anchor="middle">3×3 konv</text>
-            <circle cx="310" cy="84" r="14" fill="rgba(240,71,107,.16)" stroke="var(--crimson)"/>
-            <text x="310" y="89" fill="#fff" font-size="15" text-anchor="middle">+</text>
-            <line x1="324" y1="84" x2="356" y2="84" stroke="#5b6675" stroke-width="1.3" marker-end="url(#ar2)"/>
-            <path d="M26 69 C 26 28, 310 28, 310 66" stroke="#35d6c0" stroke-width="1.7" fill="none" marker-end="url(#ar3)"/>
-            <text x="168" y="24" fill="#35d6c0" font-size="10" text-anchor="middle">zkratka: přičti x</text>
-            <text x="180" y="132" fill="#93a1b3" font-size="10" text-anchor="middle">blok se učí jen „opravu“ (reziduum)</text>
-          </svg>
+      <h2 class="reveal" style="--i:1">Architektura ResNet</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          <div class="lightcard"><img src="__RESNET_SVG__" alt="architektura ResNet (schéma)"></div>
+          <div class="cap">Schéma: ResNet-18 · d2l.ai · CC BY-SA 4.0</div>
         </div>
         <div>
           <ul class="list">
-            <li class="reveal" style="--i:4"><span><strong>Reziduální blok:</strong> vstup se přičte <strong>zkratkou</strong> za pár vrstev. Síť se učí jen malou opravu — proto jde do <strong>50 vrstev</strong> bez ztráty signálu.</span></li>
-            <li class="reveal" style="--i:5"><span>Čtyři etapy bloků <span class="tt">[3, 4, 6, 3]</span>: rozlišení klesá, kanály rostou až na <span class="teal">2048</span>.</span></li>
+            <li class="reveal" style="--i:3"><span><strong>Čteme zdola nahoru:</strong> <span class="tt">7×7 konvoluce → batch norm → max-pooling</span>, pak <strong>čtyři etapy reziduálních bloků</strong> (⊕ = zkratka), nahoře <strong>global average pooling</strong> a <strong>plně propojená vrstva (FC)</strong>.</span></li>
+            <li class="reveal" style="--i:4"><span><strong>Reziduální blok</strong> (přerušovaný rámeček): vstup se přičte <strong>zkratkou</strong> za pár vrstev — síť se učí jen „opravu“, takže jde hluboko bez ztráty signálu.</span></li>
+            <li class="reveal" style="--i:5"><span><strong>My používáme hlubší ResNet-50:</strong> stejná stavba, jen víc bloků (<span class="tt">[3, 4, 6, 3]</span>) a na výstupu <span class="teal">2048 featur</span>. Poslední FC vrstvu (1000 tříd ImageNetu) <strong>odřízneme</strong>.</span></li>
           </ul>
         </div>
       </div>
@@ -797,6 +728,7 @@ for k, v in vals.items():
     HTML = HTML.replace("__" + k + "__", v)
 HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64).replace("__PROBE__", PROBE_B64)
 HTML = HTML.replace("__CONV_SVG__", conv_anim_svg())
+HTML = HTML.replace("__RESNET_SVG__", "data:image/svg+xml;base64," + base64.b64encode(open("figs/resnet18_d2l.svg", "rb").read()).decode())
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
 
 with open("prezentace.html", "w", encoding="utf-8") as f:

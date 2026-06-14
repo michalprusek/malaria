@@ -164,3 +164,10 @@ Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co
 - Notebooky i scoring byly otestovány spuštěním end-to-end; featury byly extrahovány a
   ověřeny na reálných datech.
 - Augmentace dat zde nelze (featury jsou fixní) — vhodné téma na diskusi „co s plnými obrázky".
+
+## Kredity
+
+- Diagram architektury ResNet v prezentaci: **ResNet-18** z knihy *Dive into Deep Learning*
+  (d2l.ai) — [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Resnet-18_architecture.svg),
+  licence **CC BY-SA 4.0** (autoři A. Zhang, Z. C. Lipton, M. Li, A. J. Smola). Soubor je
+  uložen ve `figs/resnet18_d2l.svg`.
