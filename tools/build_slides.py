@@ -240,6 +240,76 @@ def tensor_anim_svg(dur="6s"):
     return "".join(p)
 
 
+def probe_slider_block(score, y):
+    """Interaktivní slide: 1D projekce + posuvník prahu → živá matice záměn, senz., spec."""
+    smin, smax = float(score.min()) - 1, float(score.max()) + 1
+    L, R, T, B = 34, 360, 18, 128
+    Xp = lambda s: L + (s - smin) / (smax - smin) * (R - L)
+    cy = (T + B) / 2
+    ip = np.random.default_rng(0).choice(len(score), min(1600, len(score)), replace=False)
+    jit = (np.random.default_rng(1).random(len(ip)) - 0.5) * (B - T - 18)
+    pts = "".join(
+        f'<circle cx="{Xp(score[i]):.1f}" cy="{cy+jit[k]:.1f}" r="2" fill="{CRIMSON if y[i]==1 else TEAL}" fill-opacity="0.32"/>'
+        for k, i in enumerate(ip))
+    v0 = int((0 - smin) / (smax - smin) * 1000)
+    sc_js = "[" + ",".join(f"{float(v):.2f}" for v in score) + "]"
+    y_js = "".join("1" if int(v) == 1 else "0" for v in y)
+    markup = f'''  <!-- INTERAKTIVNÍ PRÁH -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Metriky · vyzkoušej si to</div>
+      <h2 class="reveal" style="--i:1">Posuň práh, sleduj dopad</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          <svg class="svgbox" viewBox="0 0 380 150" fill="none" font-family="IBM Plex Mono">
+            <line x1="{L}" y1="{cy:.0f}" x2="{R}" y2="{cy:.0f}" stroke="{GRID}" stroke-width="1"/>
+            {pts}
+            <line id="thrline" x1="{Xp(0):.1f}" y1="{T}" x2="{Xp(0):.1f}" y2="{B}" stroke="#eaf0f7" stroke-width="2" stroke-dasharray="4 3"/>
+            <text x="{L}" y="{B+18}" fill="#8b98a8" font-size="9">← zdravá</text>
+            <text x="{R}" y="{B+18}" fill="#8b98a8" font-size="9" text-anchor="end">napadená →</text>
+          </svg>
+          <input type="range" id="thrslider" min="0" max="1000" value="{v0}" style="width:100%;margin-top:.5rem;accent-color:#35d6c0;cursor:pointer">
+          <div class="cap">táhni posuvníkem = měň práh</div>
+        </div>
+        <div>
+          <div class="cmx" style="max-width:360px">
+            <div></div><div class="hdr">predikce:<br>zdravá</div><div class="hdr">predikce:<br>napadená</div>
+            <div class="rhdr">zdravá</div><div class="cell te">TN<b id="tnv">–</b></div><div class="cell te">FP<b id="fpv">–</b></div>
+            <div class="rhdr">napadená</div><div class="cell se">FN<b id="fnv">–</b></div><div class="cell se">TP<b id="tpv">–</b></div>
+          </div>
+          <div style="margin-top:1.1rem;font-family:var(--mono)">
+            <div style="color:{CRIMSON};font-size:1.25rem">senzitivita = <b id="sensv">–</b></div>
+            <div style="color:{TEAL};font-size:1.25rem;margin-top:.35rem">specificita = <b id="specv">–</b></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+'''
+    script = '''  <script>
+  (function(){
+    const S=__S__, Y="__Y__", smin=__SMIN__, smax=__SMAX__, L=__L__, R=__R__;
+    const Xp=s=>L+(s-smin)/(smax-smin)*(R-L);
+    const line=document.getElementById('thrline'), sl=document.getElementById('thrslider'), g=id=>document.getElementById(id);
+    function upd(){
+      const t=smin+(sl.value/1000)*(smax-smin);
+      line.setAttribute('x1',Xp(t).toFixed(1)); line.setAttribute('x2',Xp(t).toFixed(1));
+      let tp=0,fp=0,fn=0,tn=0;
+      for(let i=0;i<S.length;i++){const pos=S[i]>=t; if(Y[i]==='1'){pos?tp++:fn++;}else{pos?fp++:tn++;}}
+      g('tnv').textContent=tn; g('fpv').textContent=fp; g('fnv').textContent=fn; g('tpv').textContent=tp;
+      g('sensv').textContent=(tp+fn?tp/(tp+fn):0).toFixed(2).replace('.',',');
+      g('specv').textContent=(tn+fp?tn/(tn+fp):0).toFixed(2).replace('.',',');
+    }
+    sl.addEventListener('input',upd); upd();
+  })();
+  </script>
+'''
+    script = (script.replace("__S__", sc_js).replace("__Y__", y_js)
+              .replace("__SMIN__", f"{smin:.3f}").replace("__SMAX__", f"{smax:.3f}")
+              .replace("__L__", str(L)).replace("__R__", str(R)))
+    return markup + script
+
+
 # ---------- data ----------
 tr = np.load("train.npz"); te = np.load("test_features.npz"); tl = np.load("test_labels.npz")
 Xtr, ytr = tr["X"].astype(np.float32), tr["y"]
@@ -344,6 +414,7 @@ leg = ax.legend(loc="upper center", frameon=False, fontsize=12, ncol=3)
 for t in leg.get_texts(): t.set_color(INK)
 style_axes(ax); ax.grid(False); ax.spines["left"].set_visible(False)
 PROBE_B64 = fig_to_b64(fig)
+PROBE_SLIDER = probe_slider_block(score, yte)   # interaktivní slide s posuvníkem prahu
 print(f"linear probe (1D): acc={probe_acc:.3f}")
 
 # ---------- vzorové buňky ----------
@@ -754,6 +825,39 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- MATICE → SENS/SPEC -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Metriky · výpočet</div>
+      <h2 class="reveal" style="--i:1">Z matice záměn k senzitivitě a specificitě</h2>
+      <div class="grid2" style="margin-top:.5rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          <div class="cmx">
+            <div></div>
+            <div class="hdr">predikce:<br>zdravá</div>
+            <div class="hdr">predikce:<br>napadená</div>
+            <div class="rhdr">skutečnost:<br>zdravá</div>
+            <div class="cell te">TN<b>2040</b></div>
+            <div class="cell te">FP<b>27</b></div>
+            <div class="rhdr">skutečnost:<br>napadená</div>
+            <div class="cell se">FN<b>904</b></div>
+            <div class="cell se">TP<b>1163</b></div>
+          </div>
+          <div class="cap">příklad: jeden z klasifikátorů, práh 0,5</div>
+        </div>
+        <div>
+          <div class="fbox se reveal" style="--i:3"><span class="crim">senzitivita</span> = TP / (TP + FN)<br>= 1163 / (1163 + 904) ≈ <strong>0,56</strong></div>
+          <div class="fnote reveal" style="--i:3">→ z napadených buněk zachytíme 56 %</div>
+          <div class="fbox te reveal" style="--i:4"><span class="teal">specificita</span> = TN / (TN + FP)<br>= 2040 / (2040 + 27) ≈ <strong>0,99</strong></div>
+          <div class="fnote reveal" style="--i:4">→ zdravé buňky správně propustíme z 99 %</div>
+          <p class="reveal" style="--i:5"><strong>Trik:</strong> každá metrika se počítá <strong>v jednom řádku</strong> matice — senzitivita v řádku „napadená“ (crimson), specificita v řádku „zdravá“ (tyrkysová).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+__PROBE_SLIDER__
+
   <!-- 9 kNN -->
   <section class="slide">
     <div class="wrap grid2">
@@ -817,37 +921,6 @@ strong{color:#fff;font-weight:600}
           <p class="reveal" style="--i:4"><strong>Bez vážení:</strong> 3 z 5 sousedů jsou napadení → <span class="tt">0,60</span>.</p>
           <p class="reveal" style="--i:5"><strong>S vážením:</strong> zdraví (blízko) <span class="tt">1/1 + 1/1 = 2,0</span>; napadení (dál) <span class="tt">1/2 + 1/2 + 1/3 ≈ 1,33</span> → <span class="tt">P = 1,33 / 3,33 ≈ <span class="teal">0,40</span></span>.</p>
           <p class="reveal" style="--i:5">→ dva <strong>blízcí</strong> zdraví přebijí tři <strong>vzdálené</strong> napadené. Bližší rozhoduje víc.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- MATICE → SENS/SPEC -->
-  <section class="slide">
-    <div class="wrap">
-      <div class="kicker reveal" style="--i:0">Metriky · výpočet</div>
-      <h2 class="reveal" style="--i:1">Z matice záměn k senzitivitě a specificitě</h2>
-      <div class="grid2" style="margin-top:.5rem;align-items:center">
-        <div class="reveal" style="--i:2">
-          <div class="cmx">
-            <div></div>
-            <div class="hdr">predikce:<br>zdravá</div>
-            <div class="hdr">predikce:<br>napadená</div>
-            <div class="rhdr">skutečnost:<br>zdravá</div>
-            <div class="cell te">TN<b>2040</b></div>
-            <div class="cell te">FP<b>27</b></div>
-            <div class="rhdr">skutečnost:<br>napadená</div>
-            <div class="cell se">FN<b>904</b></div>
-            <div class="cell se">TP<b>1163</b></div>
-          </div>
-          <div class="cap">příklad: k-NN baseline při prahu 0,5</div>
-        </div>
-        <div>
-          <div class="fbox se reveal" style="--i:3"><span class="crim">senzitivita</span> = TP / (TP + FN)<br>= 1163 / (1163 + 904) ≈ <strong>0,56</strong></div>
-          <div class="fnote reveal" style="--i:3">→ z napadených buněk zachytíme 56 %</div>
-          <div class="fbox te reveal" style="--i:4"><span class="teal">specificita</span> = TN / (TN + FP)<br>= 2040 / (2040 + 27) ≈ <strong>0,99</strong></div>
-          <div class="fnote reveal" style="--i:4">→ zdravé buňky správně propustíme z 99 %</div>
-          <p class="reveal" style="--i:5"><strong>Trik:</strong> každá metrika se počítá <strong>v jednom řádku</strong> matice — senzitivita v řádku „napadená“ (crimson), specificita v řádku „zdravá“ (tyrkysová).</p>
         </div>
       </div>
     </div>
@@ -966,7 +1039,43 @@ strong{color:#fff;font-weight:600}
           <circle cx="368" cy="96" r="10" fill="#fff" stroke="var(--crimson)" stroke-width="2.5"/>
           <text x="368" y="124" fill="#93a1b3" font-size="9" text-anchor="middle">výstup</text>
         </svg>
+        <svg class="svgbox" style="max-width:300px;margin:.4rem auto 0" viewBox="0 0 240 116" fill="none" font-family="IBM Plex Mono">
+          <line x1="20" y1="86" x2="222" y2="86" stroke="var(--line)"/>
+          <line x1="104" y1="16" x2="104" y2="94" stroke="var(--line)"/>
+          <path d="M24 86 L104 86 L186 16" stroke="#35d6c0" stroke-width="2.6"/>
+          <text x="218" y="99" fill="#8b98a8" font-size="9" text-anchor="end">vstup x</text>
+          <text x="98" y="14" fill="#8b98a8" font-size="9" text-anchor="end">výstup</text>
+          <text x="120" y="112" fill="#35d6c0" font-size="10" text-anchor="middle">ReLU(x) = max(0, x) — zápor utne na nulu</text>
+        </svg>
       </div>
+    </div>
+  </section>
+
+  <!-- ROZDĚLENÍ DAT -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Data · rozdělení</div>
+      <h2 class="reveal" style="--i:1">Trénink, validace, test — proč tři sady?</h2>
+      <div class="reveal" style="--i:2;display:flex;height:34px;border-radius:9px;overflow:hidden;margin:.9rem 0 .2rem;font-family:var(--mono);font-size:.78rem;font-weight:600">
+        <div style="flex:70;background:rgba(53,214,192,.55);display:flex;align-items:center;justify-content:center;color:#06231f">trénovací · 70 %</div>
+        <div style="flex:15;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;color:#eaf0f7">validační · 15 %</div>
+        <div style="flex:15;background:rgba(240,71,107,.5);display:flex;align-items:center;justify-content:center;color:#1a0a0e">test · 15 %</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-top:1rem">
+        <div class="card reveal" style="--i:3">
+          <h3 class="teal">Trénovací <span class="tt" style="font-size:.9rem">19 289</span></h3>
+          <p>Model se na ní <strong>učí</strong>: MLP upravuje váhy, k-NN si ji zapamatuje. Vidí ji pořád.</p>
+        </div>
+        <div class="card reveal" style="--i:4">
+          <h3>Validační <span class="tt" style="font-size:.9rem">4 135</span></h3>
+          <p>Na ní <strong>ladíme</strong> — hyperparametry a práh — a hlídáme <strong>přeučení</strong>. Model se na ní <strong>neučí</strong>.</p>
+        </div>
+        <div class="card reveal" style="--i:5;border-color:rgba(240,71,107,.4)">
+          <h3 class="crim">Testovací <span class="tt" style="font-size:.9rem">4 134</span></h3>
+          <p><strong>Skrytá.</strong> Použije se <strong>jen jednou</strong> na finální vyhodnocení — simuluje nové pacienty. <strong>Nikdy</strong> na ní neladíme.</p>
+        </div>
+      </div>
+      <p class="reveal" style="--i:6;margin-top:1.2rem">Proč skrytý test? Kdybychom na něm ladili, naučili bychom se <em>právě jeho</em> a přecenili kvalitu. Oddělený test je <strong>poctivá zkouška na neznámých datech</strong>.</p>
     </div>
   </section>
 
@@ -1056,6 +1165,7 @@ HTML = HTML.replace("__CONV_SVG__", conv_anim_svg()).replace("__POOL_SVG__", max
 HTML = HTML.replace("__ROC_ANIM__", ROC_ANIM).replace("__TENSOR_SVG__", tensor_anim_svg())
 HTML = HTML.replace("__RESNET_SVG__", "data:image/svg+xml;base64," + base64.b64encode(open("figs/resnet18_d2l_rotated.svg", "rb").read()).decode())
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
+HTML = HTML.replace("__PROBE_SLIDER__", PROBE_SLIDER)
 
 with open("prezentace.html", "w", encoding="utf-8") as f:
     f.write(HTML)
