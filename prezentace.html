@@ -312,6 +312,27 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- TENSOR -> TENSOR -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Encoder · co se děje uvnitř</div>
+      <h2 class="reveal" style="--i:1">Kvádr příznaků: méně místa, víc kanálů</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          <svg id="tensoranim" class="svgbox" style="max-width:520px" viewBox="0 0 470 150" fill="none" font-family="IBM Plex Mono"><defs><marker id="ta" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs><rect x="56" y="8" width="72" height="72" rx="3" fill="rgba(53,214,192,0.07)" stroke="#35d6c0" stroke-opacity="0.4"/><rect x="48" y="16" width="72" height="72" rx="3" fill="rgba(53,214,192,0.07)" stroke="#35d6c0" stroke-opacity="0.4"/><rect x="40" y="24" width="72" height="72" rx="3" fill="rgba(53,214,192,0.07)" stroke="#35d6c0" stroke-opacity="0.4"/><rect x="32" y="32" width="72" height="72" rx="3" fill="rgba(53,214,192,0.07)" stroke="#35d6c0" stroke-opacity="0.4"/><rect x="24" y="40" width="72" height="72" rx="3" fill="rgba(53,214,192,0.16)" stroke="#35d6c0" stroke-opacity="0.95"/><line x1="42" y1="40" x2="42" y2="112" stroke="#35d6c0" stroke-opacity=".22"/><line x1="24" y1="58" x2="96" y2="58" stroke="#35d6c0" stroke-opacity=".22"/><line x1="60" y1="40" x2="60" y2="112" stroke="#35d6c0" stroke-opacity=".22"/><line x1="24" y1="76" x2="96" y2="76" stroke="#35d6c0" stroke-opacity=".22"/><line x1="78" y1="40" x2="78" y2="112" stroke="#35d6c0" stroke-opacity=".22"/><line x1="24" y1="94" x2="96" y2="94" stroke="#35d6c0" stroke-opacity=".22"/><text x="60" y="132" fill="#93a1b3" font-size="10" text-anchor="middle">28×28 × 64</text><text x="209" y="38" fill="#cdd6e2" font-size="10" text-anchor="middle">konvoluce + max pooling</text><line x1="140" y1="78" x2="286" y2="78" stroke="#35d6c0" stroke-width="1.6" marker-end="url(#ta)" opacity=".85"/><rect x="198" y="50" width="24" height="24" rx="2" fill="rgba(53,214,192,.14)" stroke="#35d6c0"/><line x1="206" y1="50" x2="206" y2="74" stroke="#35d6c0" stroke-opacity=".5"/><line x1="214" y1="50" x2="214" y2="74" stroke="#35d6c0" stroke-opacity=".5"/><line x1="198" y1="58" x2="222" y2="58" stroke="#35d6c0" stroke-opacity=".5"/><line x1="198" y1="66" x2="222" y2="66" stroke="#35d6c0" stroke-opacity=".5"/><text x="210" y="98" fill="#93a1b3" font-size="8" text-anchor="middle">každý kanál = jiný filtr</text><rect x="348" y="10" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="1;1;1;1;1;1;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="342" y="16" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;1;1;1;1;1;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="336" y="22" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;0;1;1;1;1;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="330" y="28" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;0;0;1;1;1;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="324" y="34" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;0;0;0;1;1;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="318" y="40" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;0;0;0;0;1;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="312" y="46" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;0;0;0;0;0;1;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="306" y="52" width="48" height="48" rx="3" fill="rgba(53,214,192,0.08)" stroke="#35d6c0" stroke-opacity="0.45" opacity="0"><animate attributeName="opacity" values="0;0;0;0;0;0;0;1;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><rect x="300" y="58" width="48" height="48" rx="3" fill="rgba(53,214,192,0.18)" stroke="#35d6c0" stroke-opacity="0.95" opacity="0"><animate attributeName="opacity" values="0;0;0;0;0;0;0;0;1" calcMode="discrete" dur="6s" repeatCount="indefinite"/></rect><text x="324" y="130" fill="#93a1b3" font-size="10" text-anchor="middle">14×14 × 128</text></svg>
+          <button class="animbtn" id="tensorbtn" type="button">⏸ Pozastavit</button>
+        </div>
+        <div>
+          <ul class="list">
+            <li class="reveal" style="--i:3"><span>Uvnitř sítě putuje <strong>tensor příznaků</strong> — kvádr <span class="tt">výška × šířka × kanály</span>.</span></li>
+            <li class="reveal" style="--i:4"><span>Každá etapa ho <strong>konvolucí + max poolingem</strong> přemění: <strong>rozlišení na polovinu</strong>, ale <strong>kanálů dvakrát víc</strong> (<span class="tt">28² → 14²</span>, <span class="tt">64 → 128</span>).</span></li>
+            <li class="reveal" style="--i:5"><span>Každý <span class="teal">kanál</span> je výstup <strong>jiného filtru</strong> — jiný detektor (hrana, textura, tvar). Na animaci <strong>vznikají postupně</strong>.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 7 TRANSFER LEARNING -->
   <section class="slide">
     <div class="wrap grid2">
@@ -498,6 +519,45 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- 11 MLP -->
+  <section class="slide">
+    <div class="wrap grid2">
+      <div>
+        <div class="kicker reveal" style="--i:0">Naučená hlava · výsledek</div>
+        <h2 class="reveal" style="--i:1">Malá síť, která se<br><span class="teal">naučí, na čem záleží</span></h2>
+        <p class="reveal" style="--i:2">Na rozdíl od k-NN se MLP (vícevrstvý perceptron) učí vážit, které z 2048 featur rozhodují — proto baseline výrazně překoná.</p>
+        <svg class="svgbox reveal" style="--i:3;max-width:380px;margin-top:1rem" viewBox="0 0 360 160">
+          <g stroke="rgba(53,214,192,.25)" stroke-width="1">
+            <line x1="60" y1="30" x2="170" y2="40"/><line x1="60" y1="30" x2="170" y2="80"/><line x1="60" y1="30" x2="170" y2="120"/>
+            <line x1="60" y1="80" x2="170" y2="40"/><line x1="60" y1="80" x2="170" y2="80"/><line x1="60" y1="80" x2="170" y2="120"/>
+            <line x1="60" y1="130" x2="170" y2="40"/><line x1="60" y1="130" x2="170" y2="80"/><line x1="60" y1="130" x2="170" y2="120"/>
+            <line x1="170" y1="40" x2="290" y2="80"/><line x1="170" y1="80" x2="290" y2="80"/><line x1="170" y1="120" x2="290" y2="80"/>
+          </g>
+          <g fill="#9aa7b6"><circle cx="60" cy="30" r="8"/><circle cx="60" cy="80" r="8"/><circle cx="60" cy="130" r="8"/></g>
+          <g fill="var(--teal)"><circle cx="170" cy="40" r="9"/><circle cx="170" cy="80" r="9"/><circle cx="170" cy="120" r="9"/></g>
+          <circle cx="290" cy="80" r="11" fill="#fff" stroke="var(--crimson)" stroke-width="3"/>
+          <text x="60" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">2048 featur</text>
+          <text x="170" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">skrytá vrstva</text>
+          <text x="290" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">P(napadená)</text>
+        </svg>
+      </div>
+      <div class="reveal" style="--i:3">
+        <h3>Specificita při senzitivitě 99 %</h3>
+        <div class="bars">
+          <div class="bar">
+            <div class="top"><span>k-NN baseline</span><span class="tt">0,00</span></div>
+            <div class="track"><div class="fill knn" style="--v:0%"></div></div>
+          </div>
+          <div class="bar">
+            <div class="top"><span class="teal">MLP (naučená hlava)</span><span class="tt teal">0,63</span></div>
+            <div class="track"><div class="fill mlp" style="--v:63%"></div></div>
+          </div>
+        </div>
+        <p style="margin-top:1rem">k-NN sice 99 % nemocných <strong>zachytí</strong>, ale jen když označí skoro všechny → specificita <span class="tt">0,00</span>. MLP přitom udrží <span class="teal tt">0,63</span>. <strong>Baseline překonán.</strong></p>
+      </div>
+    </div>
+  </section>
+
   <!-- MLP VYSVĚTLENÍ -->
   <section class="slide">
     <div class="wrap grid2">
@@ -536,45 +596,6 @@ strong{color:#fff;font-weight:600}
           <circle cx="368" cy="96" r="10" fill="#fff" stroke="var(--crimson)" stroke-width="2.5"/>
           <text x="368" y="124" fill="#93a1b3" font-size="9" text-anchor="middle">výstup</text>
         </svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- 11 MLP -->
-  <section class="slide">
-    <div class="wrap grid2">
-      <div>
-        <div class="kicker reveal" style="--i:0">Naučená hlava · výsledek</div>
-        <h2 class="reveal" style="--i:1">Malá síť, která se<br><span class="teal">naučí, na čem záleží</span></h2>
-        <p class="reveal" style="--i:2">Na rozdíl od k-NN se MLP (vícevrstvý perceptron) učí vážit, které z 2048 featur rozhodují — proto baseline výrazně překoná.</p>
-        <svg class="svgbox reveal" style="--i:3;max-width:380px;margin-top:1rem" viewBox="0 0 360 160">
-          <g stroke="rgba(53,214,192,.25)" stroke-width="1">
-            <line x1="60" y1="30" x2="170" y2="40"/><line x1="60" y1="30" x2="170" y2="80"/><line x1="60" y1="30" x2="170" y2="120"/>
-            <line x1="60" y1="80" x2="170" y2="40"/><line x1="60" y1="80" x2="170" y2="80"/><line x1="60" y1="80" x2="170" y2="120"/>
-            <line x1="60" y1="130" x2="170" y2="40"/><line x1="60" y1="130" x2="170" y2="80"/><line x1="60" y1="130" x2="170" y2="120"/>
-            <line x1="170" y1="40" x2="290" y2="80"/><line x1="170" y1="80" x2="290" y2="80"/><line x1="170" y1="120" x2="290" y2="80"/>
-          </g>
-          <g fill="#9aa7b6"><circle cx="60" cy="30" r="8"/><circle cx="60" cy="80" r="8"/><circle cx="60" cy="130" r="8"/></g>
-          <g fill="var(--teal)"><circle cx="170" cy="40" r="9"/><circle cx="170" cy="80" r="9"/><circle cx="170" cy="120" r="9"/></g>
-          <circle cx="290" cy="80" r="11" fill="#fff" stroke="var(--crimson)" stroke-width="3"/>
-          <text x="60" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">2048 featur</text>
-          <text x="170" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">skrytá vrstva</text>
-          <text x="290" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">P(napadená)</text>
-        </svg>
-      </div>
-      <div class="reveal" style="--i:3">
-        <h3>Specificita při senzitivitě 99 %</h3>
-        <div class="bars">
-          <div class="bar">
-            <div class="top"><span>k-NN baseline</span><span class="tt">0,00</span></div>
-            <div class="track"><div class="fill knn" style="--v:0%"></div></div>
-          </div>
-          <div class="bar">
-            <div class="top"><span class="teal">MLP (naučená hlava)</span><span class="tt teal">0,63</span></div>
-            <div class="track"><div class="fill mlp" style="--v:63%"></div></div>
-          </div>
-        </div>
-        <p style="margin-top:1rem">k-NN sice 99 % nemocných <strong>zachytí</strong>, ale jen když označí skoro všechny → specificita <span class="tt">0,00</span>. MLP přitom udrží <span class="teal tt">0,63</span>. <strong>Baseline překonán.</strong></p>
       </div>
     </div>
   </section>
@@ -642,13 +663,13 @@ function toggleAnim(s,b){
   if(s._paused){s.pauseAnimations(); if(b) b.textContent='▶ Spustit';}
   else{s.unpauseAnimations(); if(b) b.textContent='⏸ Pozastavit';}
 }
-[['convanim','convbtn'],['poolanim','poolbtn'],['rocanim','rocbtn']].forEach(([sid,bid])=>{
+[['convanim','convbtn'],['poolanim','poolbtn'],['rocanim','rocbtn'],['tensoranim','tensorbtn']].forEach(([sid,bid])=>{
   const s=document.getElementById(sid), b=document.getElementById(bid);
   if(s&&b) b.addEventListener('click',()=>toggleAnim(s,b));
 });
 addEventListener('keydown',e=>{
   if(e.key==='p'||e.key==='P'){
-    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim, .slide.active #rocanim');
+    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim, .slide.active #rocanim, .slide.active #tensoranim');
     if(s) toggleAnim(s, s.parentElement.querySelector('.animbtn'));
   }
 });

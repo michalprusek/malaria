@@ -200,6 +200,42 @@ def roc_anim_svg(fpr, tpr, steps, dur="9s"):
     return "".join(p)
 
 
+def tensor_anim_svg(dur="6s"):
+    """Animovaný SVG: tensor příznaků (kvádr) → konvolucí + poolingem nový kvádr s polovičním
+    prostorovým rozlišením a dvojnásobkem kanálů; výstupní kanály vznikají postupně."""
+    p = ['<svg id="tensoranim" class="svgbox" style="max-width:520px" viewBox="0 0 470 150" fill="none" font-family="IBM Plex Mono">',
+         '<defs><marker id="ta" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">'
+         '<path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>']
+    # vstupní tensor (statický kvádr): 5 reprezentativních kanálů, velké rozlišení
+    nin, S, off, ix, iy = 5, 72, 8, 24, 40
+    for i in range(nin - 1, -1, -1):
+        x, y = ix + i * off, iy - i * off
+        p.append(f'<rect x="{x}" y="{y}" width="{S}" height="{S}" rx="3" fill="rgba(53,214,192,{0.16 if i==0 else 0.07})" stroke="#35d6c0" stroke-opacity="{0.95 if i==0 else 0.4}"/>')
+    for k in range(1, 4):  # mřížka 4×4 na přední ploše vstupu
+        p.append(f'<line x1="{ix+k*S//4}" y1="{iy}" x2="{ix+k*S//4}" y2="{iy+S}" stroke="#35d6c0" stroke-opacity=".22"/>')
+        p.append(f'<line x1="{ix}" y1="{iy+k*S//4}" x2="{ix+S}" y2="{iy+k*S//4}" stroke="#35d6c0" stroke-opacity=".22"/>')
+    p.append(f'<text x="{ix+S//2}" y="{iy+S+20}" fill="#93a1b3" font-size="10" text-anchor="middle">28×28 × 64</text>')
+    # šipka + filtr + popis
+    p.append('<text x="209" y="38" fill="#cdd6e2" font-size="10" text-anchor="middle">konvoluce + max pooling</text>')
+    p.append('<line x1="140" y1="78" x2="286" y2="78" stroke="#35d6c0" stroke-width="1.6" marker-end="url(#ta)" opacity=".85"/>')
+    fxx, fyy, fs = 198, 50, 24
+    p.append(f'<rect x="{fxx}" y="{fyy}" width="{fs}" height="{fs}" rx="2" fill="rgba(53,214,192,.14)" stroke="#35d6c0"/>')
+    p.append(f'<line x1="{fxx+8}" y1="{fyy}" x2="{fxx+8}" y2="{fyy+fs}" stroke="#35d6c0" stroke-opacity=".5"/><line x1="{fxx+16}" y1="{fyy}" x2="{fxx+16}" y2="{fyy+fs}" stroke="#35d6c0" stroke-opacity=".5"/>')
+    p.append(f'<line x1="{fxx}" y1="{fyy+8}" x2="{fxx+fs}" y2="{fyy+8}" stroke="#35d6c0" stroke-opacity=".5"/><line x1="{fxx}" y1="{fyy+16}" x2="{fxx+fs}" y2="{fyy+16}" stroke="#35d6c0" stroke-opacity=".5"/>')
+    p.append('<text x="210" y="98" fill="#93a1b3" font-size="8" text-anchor="middle">každý kanál = jiný filtr</text>')
+    # výstupní tensor: víc kanálů, poloviční rozlišení; kanály vznikají zezadu dopředu
+    nout, So, offo, ox, oy = 9, 48, 6, 300, 58
+    for i in range(nout - 1, -1, -1):
+        x, y = ox + i * offo, oy - i * offo
+        appear = nout - 1 - i
+        vals = ";".join("1" if seg >= appear else "0" for seg in range(nout))
+        p.append(f'<rect x="{x}" y="{y}" width="{So}" height="{So}" rx="3" fill="rgba(53,214,192,{0.18 if i==0 else 0.08})" stroke="#35d6c0" stroke-opacity="{0.95 if i==0 else 0.45}" opacity="0">'
+                 f'<animate attributeName="opacity" values="{vals}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
+    p.append(f'<text x="{ox+So//2}" y="{oy+So+24}" fill="#93a1b3" font-size="10" text-anchor="middle">14×14 × 128</text>')
+    p.append('</svg>')
+    return "".join(p)
+
+
 # ---------- data ----------
 tr = np.load("train.npz"); te = np.load("test_features.npz"); tl = np.load("test_labels.npz")
 Xtr, ytr = tr["X"].astype(np.float32), tr["y"]
@@ -640,6 +676,27 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- TENSOR -> TENSOR -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Encoder · co se děje uvnitř</div>
+      <h2 class="reveal" style="--i:1">Kvádr příznaků: méně místa, víc kanálů</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          __TENSOR_SVG__
+          <button class="animbtn" id="tensorbtn" type="button">⏸ Pozastavit</button>
+        </div>
+        <div>
+          <ul class="list">
+            <li class="reveal" style="--i:3"><span>Uvnitř sítě putuje <strong>tensor příznaků</strong> — kvádr <span class="tt">výška × šířka × kanály</span>.</span></li>
+            <li class="reveal" style="--i:4"><span>Každá etapa ho <strong>konvolucí + max poolingem</strong> přemění: <strong>rozlišení na polovinu</strong>, ale <strong>kanálů dvakrát víc</strong> (<span class="tt">28² → 14²</span>, <span class="tt">64 → 128</span>).</span></li>
+            <li class="reveal" style="--i:5"><span>Každý <span class="teal">kanál</span> je výstup <strong>jiného filtru</strong> — jiný detektor (hrana, textura, tvar). Na animaci <strong>vznikají postupně</strong>.</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- 7 TRANSFER LEARNING -->
   <section class="slide">
     <div class="wrap grid2">
@@ -826,6 +883,45 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- 11 MLP -->
+  <section class="slide">
+    <div class="wrap grid2">
+      <div>
+        <div class="kicker reveal" style="--i:0">Naučená hlava · výsledek</div>
+        <h2 class="reveal" style="--i:1">Malá síť, která se<br><span class="teal">naučí, na čem záleží</span></h2>
+        <p class="reveal" style="--i:2">Na rozdíl od k-NN se MLP (vícevrstvý perceptron) učí vážit, které z 2048 featur rozhodují — proto baseline výrazně překoná.</p>
+        <svg class="svgbox reveal" style="--i:3;max-width:380px;margin-top:1rem" viewBox="0 0 360 160">
+          <g stroke="rgba(53,214,192,.25)" stroke-width="1">
+            <line x1="60" y1="30" x2="170" y2="40"/><line x1="60" y1="30" x2="170" y2="80"/><line x1="60" y1="30" x2="170" y2="120"/>
+            <line x1="60" y1="80" x2="170" y2="40"/><line x1="60" y1="80" x2="170" y2="80"/><line x1="60" y1="80" x2="170" y2="120"/>
+            <line x1="60" y1="130" x2="170" y2="40"/><line x1="60" y1="130" x2="170" y2="80"/><line x1="60" y1="130" x2="170" y2="120"/>
+            <line x1="170" y1="40" x2="290" y2="80"/><line x1="170" y1="80" x2="290" y2="80"/><line x1="170" y1="120" x2="290" y2="80"/>
+          </g>
+          <g fill="#9aa7b6"><circle cx="60" cy="30" r="8"/><circle cx="60" cy="80" r="8"/><circle cx="60" cy="130" r="8"/></g>
+          <g fill="var(--teal)"><circle cx="170" cy="40" r="9"/><circle cx="170" cy="80" r="9"/><circle cx="170" cy="120" r="9"/></g>
+          <circle cx="290" cy="80" r="11" fill="#fff" stroke="var(--crimson)" stroke-width="3"/>
+          <text x="60" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">2048 featur</text>
+          <text x="170" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">skrytá vrstva</text>
+          <text x="290" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">P(napadená)</text>
+        </svg>
+      </div>
+      <div class="reveal" style="--i:3">
+        <h3>Specificita při senzitivitě 99 %</h3>
+        <div class="bars">
+          <div class="bar">
+            <div class="top"><span>k-NN baseline</span><span class="tt">__KNN_SPEC__</span></div>
+            <div class="track"><div class="fill knn" style="--v:__KNN_SPEC_PCT__%"></div></div>
+          </div>
+          <div class="bar">
+            <div class="top"><span class="teal">MLP (naučená hlava)</span><span class="tt teal">__MLP_SPEC__</span></div>
+            <div class="track"><div class="fill mlp" style="--v:__MLP_SPEC_PCT__%"></div></div>
+          </div>
+        </div>
+        <p style="margin-top:1rem">k-NN sice 99 % nemocných <strong>zachytí</strong>, ale jen když označí skoro všechny → specificita <span class="tt">__KNN_SPEC__</span>. MLP přitom udrží <span class="teal tt">__MLP_SPEC__</span>. <strong>Baseline překonán.</strong></p>
+      </div>
+    </div>
+  </section>
+
   <!-- MLP VYSVĚTLENÍ -->
   <section class="slide">
     <div class="wrap grid2">
@@ -864,45 +960,6 @@ strong{color:#fff;font-weight:600}
           <circle cx="368" cy="96" r="10" fill="#fff" stroke="var(--crimson)" stroke-width="2.5"/>
           <text x="368" y="124" fill="#93a1b3" font-size="9" text-anchor="middle">výstup</text>
         </svg>
-      </div>
-    </div>
-  </section>
-
-  <!-- 11 MLP -->
-  <section class="slide">
-    <div class="wrap grid2">
-      <div>
-        <div class="kicker reveal" style="--i:0">Naučená hlava · výsledek</div>
-        <h2 class="reveal" style="--i:1">Malá síť, která se<br><span class="teal">naučí, na čem záleží</span></h2>
-        <p class="reveal" style="--i:2">Na rozdíl od k-NN se MLP (vícevrstvý perceptron) učí vážit, které z 2048 featur rozhodují — proto baseline výrazně překoná.</p>
-        <svg class="svgbox reveal" style="--i:3;max-width:380px;margin-top:1rem" viewBox="0 0 360 160">
-          <g stroke="rgba(53,214,192,.25)" stroke-width="1">
-            <line x1="60" y1="30" x2="170" y2="40"/><line x1="60" y1="30" x2="170" y2="80"/><line x1="60" y1="30" x2="170" y2="120"/>
-            <line x1="60" y1="80" x2="170" y2="40"/><line x1="60" y1="80" x2="170" y2="80"/><line x1="60" y1="80" x2="170" y2="120"/>
-            <line x1="60" y1="130" x2="170" y2="40"/><line x1="60" y1="130" x2="170" y2="80"/><line x1="60" y1="130" x2="170" y2="120"/>
-            <line x1="170" y1="40" x2="290" y2="80"/><line x1="170" y1="80" x2="290" y2="80"/><line x1="170" y1="120" x2="290" y2="80"/>
-          </g>
-          <g fill="#9aa7b6"><circle cx="60" cy="30" r="8"/><circle cx="60" cy="80" r="8"/><circle cx="60" cy="130" r="8"/></g>
-          <g fill="var(--teal)"><circle cx="170" cy="40" r="9"/><circle cx="170" cy="80" r="9"/><circle cx="170" cy="120" r="9"/></g>
-          <circle cx="290" cy="80" r="11" fill="#fff" stroke="var(--crimson)" stroke-width="3"/>
-          <text x="60" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">2048 featur</text>
-          <text x="170" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">skrytá vrstva</text>
-          <text x="290" y="152" fill="#93a1b3" font-size="9" font-family="IBM Plex Mono" text-anchor="middle">P(napadená)</text>
-        </svg>
-      </div>
-      <div class="reveal" style="--i:3">
-        <h3>Specificita při senzitivitě 99 %</h3>
-        <div class="bars">
-          <div class="bar">
-            <div class="top"><span>k-NN baseline</span><span class="tt">__KNN_SPEC__</span></div>
-            <div class="track"><div class="fill knn" style="--v:__KNN_SPEC_PCT__%"></div></div>
-          </div>
-          <div class="bar">
-            <div class="top"><span class="teal">MLP (naučená hlava)</span><span class="tt teal">__MLP_SPEC__</span></div>
-            <div class="track"><div class="fill mlp" style="--v:__MLP_SPEC_PCT__%"></div></div>
-          </div>
-        </div>
-        <p style="margin-top:1rem">k-NN sice 99 % nemocných <strong>zachytí</strong>, ale jen když označí skoro všechny → specificita <span class="tt">__KNN_SPEC__</span>. MLP přitom udrží <span class="teal tt">__MLP_SPEC__</span>. <strong>Baseline překonán.</strong></p>
       </div>
     </div>
   </section>
@@ -970,13 +1027,13 @@ function toggleAnim(s,b){
   if(s._paused){s.pauseAnimations(); if(b) b.textContent='▶ Spustit';}
   else{s.unpauseAnimations(); if(b) b.textContent='⏸ Pozastavit';}
 }
-[['convanim','convbtn'],['poolanim','poolbtn'],['rocanim','rocbtn']].forEach(([sid,bid])=>{
+[['convanim','convbtn'],['poolanim','poolbtn'],['rocanim','rocbtn'],['tensoranim','tensorbtn']].forEach(([sid,bid])=>{
   const s=document.getElementById(sid), b=document.getElementById(bid);
   if(s&&b) b.addEventListener('click',()=>toggleAnim(s,b));
 });
 addEventListener('keydown',e=>{
   if(e.key==='p'||e.key==='P'){
-    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim, .slide.active #rocanim');
+    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim, .slide.active #rocanim, .slide.active #tensoranim');
     if(s) toggleAnim(s, s.parentElement.querySelector('.animbtn'));
   }
 });
@@ -990,7 +1047,7 @@ for k, v in vals.items():
     HTML = HTML.replace("__" + k + "__", v)
 HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64).replace("__PROBE__", PROBE_B64)
 HTML = HTML.replace("__CONV_SVG__", conv_anim_svg()).replace("__POOL_SVG__", maxpool_anim_svg())
-HTML = HTML.replace("__ROC_ANIM__", ROC_ANIM)
+HTML = HTML.replace("__ROC_ANIM__", ROC_ANIM).replace("__TENSOR_SVG__", tensor_anim_svg())
 HTML = HTML.replace("__RESNET_SVG__", "data:image/svg+xml;base64," + base64.b64encode(open("figs/resnet18_d2l_rotated.svg", "rb").read()).decode())
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
 
