@@ -248,10 +248,11 @@ with torch.no_grad():
 fpr_m, tpr_m, _ = roc_curve(yte, p_mlp); okm = tpr_m >= 0.99; bm = int(np.argmin(np.where(okm, fpr_m, 2.0)))
 mlp_spec99 = 1 - fpr_m[bm]; mlp_auc = roc_auc_score(yte, p_mlp)
 mlp_acc = (((p_mlp >= 0.5).astype(int)) == yte).mean()
-# operační body: prahy podle rovnoměrně rozložené FPR (aby body prošly celou křivkou)
+# operační body: prahy podle rovnoměrně rozložené FPR (aby body prošly celou křivkou).
+# Hustě (50 kroků) → matice i bod se mění plynule, synchronně s kreslením křivky.
 fa, ta, tha = roc_curve(yte, p_mlp)
 roc_steps = []
-for ft in np.linspace(0.04, 0.96, 10):
+for ft in np.linspace(0.02, 0.99, 50):
     j = min(max(int(np.searchsorted(fa, ft)), 1), len(tha) - 1)
     th = float(tha[j])
     yp = (p_mlp >= th).astype(int)
