@@ -168,6 +168,6 @@ Zlaté pravidlo pro studenty: **měňte vždy jen jednu věc**, ať poznáte, co
 ## Kredity
 
 - Diagram architektury ResNet v prezentaci: **ResNet-18** z knihy *Dive into Deep Learning*
-  (d2l.ai) — [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Resnet-18_architecture.svg),
-  licence **CC BY-SA 4.0** (autoři A. Zhang, Z. C. Lipton, M. Li, A. J. Smola). Soubor je
-  uložen ve `figs/resnet18_d2l.svg`.
+  (d2l.ai) — [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Resnet-18_architecture_(rotated).svg),
+  licence **CC BY-SA 4.0** (autoři A. Zhang, Z. C. Lipton, M. Li, A. J. Smola). V prezentaci je
+  použita **ležatá** varianta `figs/resnet18_d2l_rotated.svg` (portrétní originál `figs/resnet18_d2l.svg`).

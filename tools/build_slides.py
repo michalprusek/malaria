@@ -58,7 +58,7 @@ def conv_anim_svg():
     cell, ix, iy, ox, oy, dur = 22, 16, 24, 350, 46, "7.2s"
     offs = [(c * cell, r * cell) for r in range(3) for c in range(3)]
     vals = ";".join(f"{dx} {dy}" for dx, dy in offs)
-    p = ['<svg class="svgbox" viewBox="0 0 470 200" fill="none" font-family="IBM Plex Mono">',
+    p = ['<svg id="convanim" class="svgbox" viewBox="0 0 470 200" fill="none" font-family="IBM Plex Mono">',
          '<defs><marker id="ca" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">'
          '<path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>']
     # vstupní mřížka 5×5
@@ -88,6 +88,50 @@ def conv_anim_svg():
     # aktivní výstupní buňka v synchronu
     p.append(f'<rect x="{ox}" y="{oy}" width="{cell}" height="{cell}" fill="none" stroke="#35d6c0" stroke-width="2.5">'
              f'<animateTransform attributeName="transform" type="translate" values="{vals}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
+    p.append('</svg>')
+    return "".join(p)
+
+
+def maxpool_anim_svg():
+    """Animovaný SVG: okno 2×2 (krok 2) klouže po mapě 4×4, výstup = maximum okna."""
+    cell, ix, iy, ox, oy, dur = 26, 16, 26, 300, 52, "6s"
+    M = [[3, 1, 2, 0], [1, 5, 0, 2], [4, 2, 6, 1], [0, 3, 1, 8]]
+    order = [(0, 0), (0, 1), (1, 0), (1, 1)]
+    maxv = [max(M[2*r][2*c], M[2*r][2*c+1], M[2*r+1][2*c], M[2*r+1][2*c+1]) for r, c in order]
+    win_vals = ";".join(f"{c*2*cell} {r*2*cell}" for r, c in order)
+    oh_vals = ";".join(f"{c*cell} {r*cell}" for r, c in order)
+    p = ['<svg id="poolanim" class="svgbox" viewBox="0 0 420 170" fill="none" font-family="IBM Plex Mono">',
+         '<defs><marker id="pa" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">'
+         '<path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>']
+    # vstupní mřížka 4×4 + čísla
+    p.append(f'<rect x="{ix}" y="{iy}" width="{4*cell}" height="{4*cell}" rx="4" fill="rgba(255,255,255,.04)" stroke="var(--line)"/>')
+    for k in range(1, 4):
+        p.append(f'<line x1="{ix+k*cell}" y1="{iy}" x2="{ix+k*cell}" y2="{iy+4*cell}" stroke="var(--line)"/>')
+        p.append(f'<line x1="{ix}" y1="{iy+k*cell}" x2="{ix+4*cell}" y2="{iy+k*cell}" stroke="var(--line)"/>')
+    for r in range(4):
+        for c in range(4):
+            p.append(f'<text x="{ix+c*cell+cell//2}" y="{iy+r*cell+cell//2+4}" fill="#cdd6e2" font-size="12" text-anchor="middle">{M[r][c]}</text>')
+    p.append(f'<text x="{ix+4*cell//2}" y="{iy+4*cell+18}" fill="#93a1b3" font-size="10" text-anchor="middle">mapa příznaků — okno 2×2 klouže</text>')
+    # výstupní mřížka 2×2
+    p.append(f'<rect x="{ox}" y="{oy}" width="{2*cell}" height="{2*cell}" rx="4" fill="rgba(255,255,255,.03)" stroke="var(--line)"/>')
+    p.append(f'<line x1="{ox+cell}" y1="{oy}" x2="{ox+cell}" y2="{oy+2*cell}" stroke="var(--line)"/>')
+    p.append(f'<line x1="{ox}" y1="{oy+cell}" x2="{ox+2*cell}" y2="{oy+cell}" stroke="var(--line)"/>')
+    p.append(f'<text x="{ox+2*cell//2}" y="{oy+2*cell+18}" fill="#93a1b3" font-size="10" text-anchor="middle">po poolingu (2× menší)</text>')
+    # výstupní maxima — postupně se objevují
+    for k, (r, c) in enumerate(order):
+        t = max(k / 4.0, 0.0001)
+        p.append(f'<text x="{ox+c*cell+cell//2}" y="{oy+r*cell+cell//2+5}" fill="#35d6c0" font-size="14" font-weight="600" text-anchor="middle" opacity="0">{maxv[k]}'
+                 f'<animate attributeName="opacity" values="0;1" keyTimes="0;{t:.4f}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></text>')
+    # šipka + „max"
+    midy = oy + 2 * cell // 2
+    p.append(f'<line x1="{ix+4*cell+8}" y1="{midy}" x2="{ox-10}" y2="{midy}" stroke="#35d6c0" stroke-width="1.4" marker-end="url(#pa)" opacity=".8"/>')
+    p.append(f'<text x="{(ix+4*cell+ox)//2}" y="{midy-8}" fill="#cdd6e2" font-size="11" text-anchor="middle">max</text>')
+    # klouzající okno 2×2
+    p.append(f'<rect x="{ix}" y="{iy}" width="{2*cell}" height="{2*cell}" fill="rgba(53,214,192,.22)" stroke="#35d6c0" stroke-width="2">'
+             f'<animateTransform attributeName="transform" type="translate" values="{win_vals}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
+    # aktivní výstupní buňka
+    p.append(f'<rect x="{ox}" y="{oy}" width="{cell}" height="{cell}" fill="none" stroke="#35d6c0" stroke-width="2.5">'
+             f'<animateTransform attributeName="transform" type="translate" values="{oh_vals}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
     p.append('</svg>')
     return "".join(p)
 
@@ -291,7 +335,21 @@ strong{color:#fff;font-weight:600}
 .figframe img{display:block;width:100%}
 .lightcard{background:#f4f7fb;border-radius:16px;padding:14px;display:flex;justify-content:center;border:1px solid var(--line)}
 .lightcard img{display:block;height:min(60vh,500px);width:auto;max-width:100%}
+.lightcard.wide img{width:100%;height:auto;max-height:42vh}
 .cap{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-align:center;margin-top:.55rem}
+.animbtn{margin-top:.9rem;font-family:var(--mono);font-size:.8rem;color:var(--ink);background:rgba(255,255,255,.05);
+  border:1px solid var(--line);border-radius:999px;padding:.5em 1.1em;cursor:pointer;transition:.2s}
+.animbtn:hover{border-color:var(--teal);color:var(--teal)}
+.cmx{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;max-width:440px;font-family:var(--mono)}
+.cmx .hdr{color:var(--muted);font-size:.7rem;text-align:center;align-self:end;padding-bottom:.2rem;line-height:1.15}
+.cmx .rhdr{color:var(--muted);font-size:.72rem;display:flex;align-items:center;justify-content:flex-end;text-align:right;padding-right:.5rem;line-height:1.15}
+.cmx .cell{border-radius:10px;padding:.6rem .3rem;text-align:center;border:1px solid var(--line);color:var(--muted);font-size:.68rem}
+.cmx .cell b{display:block;color:#fff;font-size:1.5rem;font-weight:600;margin-top:.1rem}
+.cmx .se{background:rgba(240,71,107,.12);border-color:rgba(240,71,107,.4)}
+.cmx .te{background:rgba(53,214,192,.10);border-color:rgba(53,214,192,.35)}
+.fbox{font-family:var(--mono);font-size:1.02rem;border-left:3px solid var(--line);padding:.45rem .9rem;margin:.15rem 0;line-height:1.5}
+.fbox.se{border-color:var(--crimson)} .fbox.te{border-color:var(--teal)}
+.fnote{color:var(--muted);font-size:.92rem;margin:.1rem 0 1.1rem 1rem}
 
 /* vzorové buňky */
 .cells{display:flex;gap:1.4rem;flex-wrap:wrap}
@@ -462,7 +520,28 @@ strong{color:#fff;font-weight:600}
         </div>
         <div class="reveal" style="--i:3">
           __CONV_SVG__
+          <button class="animbtn" id="convbtn" type="button">⏸ Pozastavit</button>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAX POOLING -->
+  <section class="slide">
+    <div class="wrap grid2">
+      <div>
+        <div class="kicker reveal" style="--i:0">Encoder · pooling</div>
+        <h2 class="reveal" style="--i:1">Max pooling:<br>zmenši, ponech podstatu</h2>
+        <ul class="list">
+          <li class="reveal" style="--i:2"><span>Po konvoluci přijde <strong>pooling</strong>: mapu příznaků <strong>zmenší</strong>, čímž zlevní výpočet a potlačí šum.</span></li>
+          <li class="reveal" style="--i:3"><span><strong>Max pooling</strong> vezme z každého okna (2×2) jen <strong>největší hodnotu</strong> — „nejsilnější odezvu" filtru.</span></li>
+          <li class="reveal" style="--i:4"><span>Okno se posouvá <strong>s krokem 2</strong> (nepřekrývá se), takže mapa se zmenší na <strong>polovinu</strong> v každém směru.</span></li>
+          <li class="reveal" style="--i:5"><span>Síť tím získá <span class="teal">odolnost vůči malému posunu</span> — parazit poznáme, i když je o pixel jinde.</span></li>
+        </ul>
+      </div>
+      <div class="reveal" style="--i:3">
+        __POOL_SVG__
+        <button class="animbtn" id="poolbtn" type="button">⏸ Pozastavit</button>
       </div>
     </div>
   </section>
@@ -472,19 +551,15 @@ strong{color:#fff;font-weight:600}
     <div class="wrap">
       <div class="kicker reveal" style="--i:0">Encoder · architektura</div>
       <h2 class="reveal" style="--i:1">Architektura ResNet</h2>
-      <div class="grid2" style="margin-top:.4rem;align-items:center">
-        <div class="reveal" style="--i:2">
-          <div class="lightcard"><img src="__RESNET_SVG__" alt="architektura ResNet (schéma)"></div>
-          <div class="cap">Schéma: ResNet-18 · d2l.ai · CC BY-SA 4.0</div>
-        </div>
-        <div>
-          <ul class="list">
-            <li class="reveal" style="--i:3"><span><strong>Čteme zdola nahoru:</strong> <span class="tt">7×7 konvoluce → batch norm → max-pooling</span>, pak <strong>čtyři etapy reziduálních bloků</strong> (⊕ = zkratka), nahoře <strong>global average pooling</strong> a <strong>plně propojená vrstva (FC)</strong>.</span></li>
-            <li class="reveal" style="--i:4"><span><strong>Reziduální blok</strong> (přerušovaný rámeček): vstup se přičte <strong>zkratkou</strong> za pár vrstev — síť se učí jen „opravu“, takže jde hluboko bez ztráty signálu.</span></li>
-            <li class="reveal" style="--i:5"><span><strong>My používáme hlubší ResNet-50:</strong> stejná stavba, jen víc bloků (<span class="tt">[3, 4, 6, 3]</span>) a na výstupu <span class="teal">2048 featur</span>. Poslední FC vrstvu (1000 tříd ImageNetu) <strong>odřízneme</strong>.</span></li>
-          </ul>
-        </div>
+      <div class="reveal lightcard wide" style="--i:2;margin:.6rem auto 0;max-width:980px">
+        <img src="__RESNET_SVG__" alt="architektura ResNet (schéma)">
       </div>
+      <div class="cap reveal" style="--i:2">Schéma: ResNet-18 · d2l.ai · CC BY-SA 4.0</div>
+      <ul class="list" style="margin-top:1rem">
+        <li class="reveal" style="--i:3"><span><strong>Po směru šipek:</strong> <span class="tt">7×7 konvoluce → batch norm → max-pooling</span>, pak <strong>čtyři etapy reziduálních bloků</strong> (⊕ = zkratka), <strong>global average pooling</strong> a <strong>plně propojená vrstva (FC)</strong>.</span></li>
+        <li class="reveal" style="--i:4"><span><strong>Reziduální blok</strong> (přerušovaný rámeček): vstup se přičte <strong>zkratkou</strong> — síť se učí jen „opravu“, takže jde hluboko bez ztráty signálu.</span></li>
+        <li class="reveal" style="--i:5"><span><strong>My používáme hlubší ResNet-50:</strong> stejná stavba, víc bloků (<span class="tt">[3, 4, 6, 3]</span>), na výstupu <span class="teal">2048 featur</span>; poslední FC vrstvu <strong>odřízneme</strong>.</span></li>
+      </ul>
     </div>
   </section>
 
@@ -565,6 +640,37 @@ strong{color:#fff;font-weight:600}
           <div class="c ok"><b>__TP__</b><span>správně napadená</span></div>
         </div>
         <p style="margin-top:.9rem" class="crim"><strong>…ale přehlédne skoro polovinu nemocných.</strong> Přesnost klame.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MATICE → SENS/SPEC -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Metriky · výpočet</div>
+      <h2 class="reveal" style="--i:1">Z matice záměn k senzitivitě a specificitě</h2>
+      <div class="grid2" style="margin-top:.5rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          <div class="cmx">
+            <div></div>
+            <div class="hdr">predikce:<br>zdravá</div>
+            <div class="hdr">predikce:<br>napadená</div>
+            <div class="rhdr">skutečnost:<br>zdravá</div>
+            <div class="cell te">TN<b>2040</b></div>
+            <div class="cell te">FP<b>27</b></div>
+            <div class="rhdr">skutečnost:<br>napadená</div>
+            <div class="cell se">FN<b>904</b></div>
+            <div class="cell se">TP<b>1163</b></div>
+          </div>
+          <div class="cap">příklad: k-NN baseline při prahu 0,5</div>
+        </div>
+        <div>
+          <div class="fbox se reveal" style="--i:3"><span class="crim">senzitivita</span> = TP / (TP + FN)<br>= 1163 / (1163 + 904) ≈ <strong>0,56</strong></div>
+          <div class="fnote reveal" style="--i:3">→ z napadených buněk zachytíme 56 %</div>
+          <div class="fbox te reveal" style="--i:4"><span class="teal">specificita</span> = TN / (TN + FP)<br>= 2040 / (2040 + 27) ≈ <strong>0,99</strong></div>
+          <div class="fnote reveal" style="--i:4">→ zdravé buňky správně propustíme z 99 %</div>
+          <p class="reveal" style="--i:5"><strong>Trik:</strong> každá metrika se počítá <strong>v jednom řádku</strong> matice — senzitivita v řádku „napadená“ (crimson), specificita v řádku „zdravá“ (tyrkysová).</p>
+        </div>
       </div>
     </div>
   </section>
@@ -718,6 +824,24 @@ addEventListener('keydown',e=>{
 let sx=0;
 addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
 addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx; if(Math.abs(d)>50)(d<0?next():prev());},{passive:true});
+
+// ovládání animací (pauza/spuštění) — tlačítko i klávesa „p"
+function toggleAnim(s,b){
+  if(!s) return;
+  s._paused=!s._paused;
+  if(s._paused){s.pauseAnimations(); if(b) b.textContent='▶ Spustit';}
+  else{s.unpauseAnimations(); if(b) b.textContent='⏸ Pozastavit';}
+}
+[['convanim','convbtn'],['poolanim','poolbtn']].forEach(([sid,bid])=>{
+  const s=document.getElementById(sid), b=document.getElementById(bid);
+  if(s&&b) b.addEventListener('click',()=>toggleAnim(s,b));
+});
+addEventListener('keydown',e=>{
+  if(e.key==='p'||e.key==='P'){
+    const s=document.querySelector('.slide.active #convanim, .slide.active #poolanim');
+    if(s) toggleAnim(s, s.parentElement.querySelector('.animbtn'));
+  }
+});
 go(0);
 </script>
 </body>
@@ -727,8 +851,8 @@ go(0);
 for k, v in vals.items():
     HTML = HTML.replace("__" + k + "__", v)
 HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64).replace("__PROBE__", PROBE_B64)
-HTML = HTML.replace("__CONV_SVG__", conv_anim_svg())
-HTML = HTML.replace("__RESNET_SVG__", "data:image/svg+xml;base64," + base64.b64encode(open("figs/resnet18_d2l.svg", "rb").read()).decode())
+HTML = HTML.replace("__CONV_SVG__", conv_anim_svg()).replace("__POOL_SVG__", maxpool_anim_svg())
+HTML = HTML.replace("__RESNET_SVG__", "data:image/svg+xml;base64," + base64.b64encode(open("figs/resnet18_d2l_rotated.svg", "rb").read()).decode())
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
 
 with open("prezentace.html", "w", encoding="utf-8") as f:
