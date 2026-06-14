@@ -136,34 +136,67 @@ def maxpool_anim_svg():
     return "".join(p)
 
 
-def roc_anim_svg(fpr, tpr, dur="5s"):
-    """Animovaný SVG: bod sweepuje po reálné ROC (práh vysoký→nízký) a křivka se dokresluje."""
-    n = len(fpr)
-    idx = sorted(set(np.linspace(0, n - 1, 80).astype(int).tolist()))
-    L, R, T, B = 48, 332, 22, 268
+def roc_anim_svg(fpr, tpr, steps, dur="9s"):
+    """Animovaný SVG: bod skáče po ROC po krocích prahu a pod grafem se mění matice záměn
+    (TN/FP/FN/TP) + senzitivita a specificita pro každý práh. Vše v jednom SVG → jedno tlačítko."""
+    N = len(steps)
+    idx = sorted(set(np.linspace(0, len(fpr) - 1, 80).astype(int).tolist()))
+    L, R, T, B = 48, 350, 16, 206
     def X(f): return L + f * (R - L)
     def Y(t): return B - t * (B - T)
-    pts = [(X(fpr[i]), Y(tpr[i])) for i in idx]
-    d = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y in pts)
+    d = "M " + " L ".join(f"{X(fpr[i]):.1f} {Y(tpr[i]):.1f}" for i in idx)
     area = d + f" L {R:.1f} {B:.1f} L {L:.1f} {B:.1f} Z"
-    p = ['<svg id="rocanim" class="svgbox" viewBox="0 0 360 300" fill="none" font-family="IBM Plex Mono">']
+
+    def changing(x, y, vals, color, size, weight="600", anchor="middle"):
+        out = []
+        for k, v in enumerate(vals):
+            op = ";".join("1" if i == k else "0" for i in range(N))
+            out.append(f'<text x="{x}" y="{y}" fill="{color}" font-size="{size}" font-weight="{weight}" '
+                       f'text-anchor="{anchor}" opacity="0">{v}'
+                       f'<animate attributeName="opacity" values="{op}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></text>')
+        return "".join(out)
+
+    com = lambda v: f"{v:.2f}".replace(".", ",")
+    p = ['<svg id="rocanim" class="svgbox" style="max-width:430px" viewBox="0 0 380 430" fill="none" font-family="IBM Plex Mono">']
+    # --- graf ---
     p.append(f'<path d="{area}" fill="rgba(53,214,192,.10)"/>')
     p.append(f'<line x1="{L}" y1="{B}" x2="{R}" y2="{B}" stroke="var(--line)"/>')
     p.append(f'<line x1="{L}" y1="{B}" x2="{L}" y2="{T}" stroke="var(--line)"/>')
     p.append(f'<line x1="{L}" y1="{B}" x2="{R}" y2="{T}" stroke="{GRID}" stroke-dasharray="3 3"/>')
     for v in (0, 0.5, 1):
-        p.append(f'<text x="{X(v):.0f}" y="{B+14}" fill="#8b98a8" font-size="9" text-anchor="middle">{v:g}</text>')
+        p.append(f'<text x="{X(v):.0f}" y="{B+13}" fill="#8b98a8" font-size="9" text-anchor="middle">{v:g}</text>')
         p.append(f'<text x="{L-6}" y="{Y(v)+3:.0f}" fill="#8b98a8" font-size="9" text-anchor="end">{v:g}</text>')
-    p.append(f'<text x="{(L+R)//2}" y="{B+30}" fill="#cdd6e2" font-size="10" text-anchor="middle">1 − specificita (falešné poplachy)</text>')
-    cy = (T + B) // 2
-    p.append(f'<text x="16" y="{cy}" fill="#cdd6e2" font-size="10" text-anchor="middle" transform="rotate(-90 16 {cy})">senzitivita</text>')
-    p.append(f'<text x="{X(0.55):.0f}" y="{Y(0.32):.0f}" fill="#35d6c0" font-size="11" opacity=".85" text-anchor="middle">AUC</text>')
+    p.append(f'<text x="{(L+R)//2}" y="{B+28}" fill="#cdd6e2" font-size="9" text-anchor="middle">1 − specificita (falešné poplachy)</text>')
+    p.append(f'<text x="14" y="{(T+B)//2}" fill="#cdd6e2" font-size="9" text-anchor="middle" transform="rotate(-90 14 {(T+B)//2})">senzitivita</text>')
+    p.append(f'<text x="{X(0.55):.0f}" y="{Y(0.3):.0f}" fill="#35d6c0" font-size="11" opacity=".85" text-anchor="middle">AUC</text>')
     p.append(f'<text x="{X(0.05):.0f}" y="{Y(0.99):.0f}" fill="#93a1b3" font-size="9">↖ ideál</text>')
-    p.append(f'<text x="{X(0.97):.0f}" y="{Y(0.06):.0f}" fill="#f0476b" font-size="9" text-anchor="end">práh: vysoký → nízký</text>')
-    p.append(f'<path id="rocp" d="{d}" stroke="#35d6c0" stroke-width="2.6" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1">'
+    p.append(f'<path d="{d}" stroke="#35d6c0" stroke-width="2.6" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1">'
              f'<animate attributeName="stroke-dashoffset" from="1" to="0" dur="{dur}" repeatCount="indefinite"/></path>')
-    p.append(f'<circle r="6" fill="{CRIMSON}" stroke="white" stroke-width="1">'
-             f'<animateMotion dur="{dur}" repeatCount="indefinite"><mpath href="#rocp"/></animateMotion></circle>')
+    # skákající bod (diskrétně přes operační body — přesně odpovídá matici)
+    cxv = ";".join(f"{X(s['fpr']):.1f}" for s in steps)
+    cyv = ";".join(f"{Y(s['tpr']):.1f}" for s in steps)
+    p.append(f'<circle r="6" fill="{CRIMSON}" stroke="white" stroke-width="1.2">'
+             f'<animate attributeName="cx" values="{cxv}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/>'
+             f'<animate attributeName="cy" values="{cyv}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></circle>')
+    # --- matice záměn pro aktuální práh ---
+    p.append(f'<text x="190" y="248" fill="#cdd6e2" font-size="10" text-anchor="middle">matice záměn pro aktuální práh:</text>')
+    p.append(f'<text x="142" y="266" fill="#8b98a8" font-size="8" text-anchor="middle">predikce: zdravá</text>')
+    p.append(f'<text x="226" y="266" fill="#8b98a8" font-size="8" text-anchor="middle">predikce: napadená</text>')
+    p.append(f'<text x="98" y="298" fill="#8b98a8" font-size="8" text-anchor="end">zdravá</text>')
+    p.append(f'<text x="98" y="352" fill="#8b98a8" font-size="8" text-anchor="end">napadená</text>')
+    cells = [(104, 272, "TN", "te", "tn"), (188, 272, "FP", "te", "fp"),
+             (104, 326, "FN", "se", "fn"), (188, 326, "TP", "se", "tp")]
+    for cx, cy, lab, kind, key in cells:
+        fillc = "rgba(53,214,192,.10)" if kind == "te" else "rgba(240,71,107,.12)"
+        strokec = "rgba(53,214,192,.35)" if kind == "te" else "rgba(240,71,107,.4)"
+        p.append(f'<rect x="{cx}" y="{cy}" width="80" height="50" rx="8" fill="{fillc}" stroke="{strokec}"/>')
+        p.append(f'<text x="{cx+8}" y="{cy+14}" fill="#8b98a8" font-size="9">{lab}</text>')
+        p.append(changing(cx + 40, cy + 38, [str(s[key]) for s in steps], "#ffffff", 17))
+    # readouty vpravo: senzitivita a specificita (mění se s prahem; práh = poloha bodu na křivce)
+    p.append(f'<text x="286" y="302" fill="{CRIMSON}" font-size="10">senzitivita</text>')
+    p.append(changing(286, 326, [com(s['sens']) for s in steps], CRIMSON, 20, anchor="start"))
+    p.append(f'<text x="286" y="360" fill="{TEAL}" font-size="10">specificita</text>')
+    p.append(changing(286, 384, [com(s['spec']) for s in steps], TEAL, 20, anchor="start"))
     p.append('</svg>')
     return "".join(p)
 
@@ -215,7 +248,18 @@ with torch.no_grad():
 fpr_m, tpr_m, _ = roc_curve(yte, p_mlp); okm = tpr_m >= 0.99; bm = int(np.argmin(np.where(okm, fpr_m, 2.0)))
 mlp_spec99 = 1 - fpr_m[bm]; mlp_auc = roc_auc_score(yte, p_mlp)
 mlp_acc = (((p_mlp >= 0.5).astype(int)) == yte).mean()
-ROC_ANIM = roc_anim_svg(fpr_m, tpr_m)   # animovaná konstrukce ROC (MLP)
+# operační body: prahy podle rovnoměrně rozložené FPR (aby body prošly celou křivkou)
+fa, ta, tha = roc_curve(yte, p_mlp)
+roc_steps = []
+for ft in np.linspace(0.04, 0.96, 10):
+    j = min(max(int(np.searchsorted(fa, ft)), 1), len(tha) - 1)
+    th = float(tha[j])
+    yp = (p_mlp >= th).astype(int)
+    tn2, fp2, fn2, tp2 = confusion_matrix(yte, yp, labels=[0, 1]).ravel()
+    se = tp2 / (tp2 + fn2); sp = tn2 / (tn2 + fp2)
+    roc_steps.append(dict(th=th, tn=int(tn2), fp=int(fp2), fn=int(fn2), tp=int(tp2),
+                          sens=float(se), spec=float(sp), fpr=float(1 - sp), tpr=float(se)))
+ROC_ANIM = roc_anim_svg(fpr_m, tpr_m, roc_steps)   # animovaná ROC + měnící se matice záměn
 
 # ROC obě křivky; soutěžní bod = nejnižší falešné poplachy při senzitivitě >= 99 %
 fig, ax = plt.subplots(figsize=(7.0, 5.4))
@@ -673,6 +717,44 @@ strong{color:#fff;font-weight:600}
           <div class="c ok"><b>__TP__</b><span>správně napadená</span></div>
         </div>
         <p style="margin-top:.9rem" class="crim"><strong>…ale přehlédne skoro polovinu nemocných.</strong> Přesnost klame.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- k-NN PRAVDĚPODOBNOST -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Baseline · k-NN</div>
+      <h2 class="reveal" style="--i:1">Jak k-NN spočítá pravděpodobnost</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:center">
+        <div class="reveal" style="--i:2">
+          <svg class="svgbox" style="max-width:300px;margin:0 auto" viewBox="0 0 250 215" fill="none" font-family="IBM Plex Mono">
+            <g stroke="var(--line)" stroke-dasharray="3 3">
+              <line x1="125" y1="120" x2="88" y2="156"/><line x1="125" y1="120" x2="165" y2="150"/>
+              <line x1="125" y1="120" x2="66" y2="70"/><line x1="125" y1="120" x2="185" y2="72"/>
+              <line x1="125" y1="120" x2="125" y2="34"/>
+            </g>
+            <g fill="#8b98a8" font-size="9">
+              <text x="96" y="144">d=1</text><text x="150" y="132">d=1</text>
+              <text x="84" y="92">d=2</text><text x="158" y="92">d=2</text><text x="131" y="80">d=3</text>
+            </g>
+            <g>
+              <circle cx="88" cy="156" r="11" fill="#35d6c0"/><circle cx="165" cy="150" r="11" fill="#35d6c0"/>
+              <circle cx="66" cy="70" r="11" fill="#f0476b"/><circle cx="185" cy="72" r="11" fill="#f0476b"/>
+              <circle cx="125" cy="34" r="11" fill="#f0476b"/>
+            </g>
+            <circle cx="125" cy="120" r="12" fill="#fff" stroke="#f0476b" stroke-width="3"/>
+            <text x="125" y="124" fill="#0a0d13" font-size="12" font-weight="700" text-anchor="middle">?</text>
+            <g font-size="9"><circle cx="22" cy="205" r="5" fill="#35d6c0"/><text x="32" y="208" fill="#93a1b3">zdravá</text>
+              <circle cx="100" cy="205" r="5" fill="#f0476b"/><text x="110" y="208" fill="#93a1b3">napadená</text></g>
+          </svg>
+        </div>
+        <div>
+          <div class="fbox reveal" style="--i:3">P(<span class="crim">napadená</span>) = Σ&nbsp;vah&nbsp;<span class="crim">napadených</span> / Σ&nbsp;vah&nbsp;všech<br><span style="color:var(--muted);font-size:.82rem">váha souseda = 1 / vzdálenost — bližší váží víc</span></div>
+          <p class="reveal" style="--i:4"><strong>Bez vážení:</strong> 3 z 5 sousedů jsou napadení → <span class="tt">0,60</span>.</p>
+          <p class="reveal" style="--i:5"><strong>S vážením:</strong> zdraví (blízko) <span class="tt">1/1 + 1/1 = 2,0</span>; napadení (dál) <span class="tt">1/2 + 1/2 + 1/3 ≈ 1,33</span> → <span class="tt">P = 1,33 / 3,33 ≈ <span class="teal">0,40</span></span>.</p>
+          <p class="reveal" style="--i:5">→ dva <strong>blízcí</strong> zdraví přebijí tři <strong>vzdálené</strong> napadené. Bližší rozhoduje víc.</p>
+        </div>
       </div>
     </div>
   </section>
