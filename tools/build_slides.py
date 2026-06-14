@@ -218,11 +218,15 @@ def tensor_anim_svg(dur="6s"):
     # šipka + filtr + popis
     p.append('<text x="209" y="38" fill="#cdd6e2" font-size="10" text-anchor="middle">konvoluce + max pooling</text>')
     p.append('<line x1="140" y1="78" x2="286" y2="78" stroke="#35d6c0" stroke-width="1.6" marker-end="url(#ta)" opacity=".85"/>')
-    fxx, fyy, fs = 198, 50, 24
-    p.append(f'<rect x="{fxx}" y="{fyy}" width="{fs}" height="{fs}" rx="2" fill="rgba(53,214,192,.14)" stroke="#35d6c0"/>')
-    p.append(f'<line x1="{fxx+8}" y1="{fyy}" x2="{fxx+8}" y2="{fyy+fs}" stroke="#35d6c0" stroke-opacity=".5"/><line x1="{fxx+16}" y1="{fyy}" x2="{fxx+16}" y2="{fyy+fs}" stroke="#35d6c0" stroke-opacity=".5"/>')
-    p.append(f'<line x1="{fxx}" y1="{fyy+8}" x2="{fxx+fs}" y2="{fyy+8}" stroke="#35d6c0" stroke-opacity=".5"/><line x1="{fxx}" y1="{fyy+16}" x2="{fxx+fs}" y2="{fyy+16}" stroke="#35d6c0" stroke-opacity=".5"/>')
-    p.append('<text x="210" y="98" fill="#93a1b3" font-size="8" text-anchor="middle">každý kanál = jiný filtr</text>')
+    # 3D kernel (kvádr 3×3×C — filtr sahá přes všechny vstupní kanály)
+    kx, ky, ks, koff, nk = 197, 52, 24, 5, 3
+    for j in range(nk - 1, -1, -1):
+        x, y = kx + j * koff, ky - j * koff
+        p.append(f'<rect x="{x}" y="{y}" width="{ks}" height="{ks}" rx="2" fill="rgba(53,214,192,{0.22 if j==0 else 0.1})" stroke="#35d6c0" stroke-opacity="{0.95 if j==0 else 0.5}"/>')
+    for k in range(1, 3):  # mřížka 3×3 na přední ploše kernelu
+        p.append(f'<line x1="{kx+k*ks//3}" y1="{ky}" x2="{kx+k*ks//3}" y2="{ky+ks}" stroke="#35d6c0" stroke-opacity=".55"/>')
+        p.append(f'<line x1="{kx}" y1="{ky+k*ks//3}" x2="{kx+ks}" y2="{ky+k*ks//3}" stroke="#35d6c0" stroke-opacity=".55"/>')
+    p.append('<text x="212" y="100" fill="#93a1b3" font-size="8" text-anchor="middle">filtr 3×3×C — jeden na každý výstupní kanál</text>')
     # výstupní tensor: víc kanálů, poloviční rozlišení; kanály vznikají zezadu dopředu
     nout, So, offo, ox, oy = 9, 48, 6, 300, 58
     for i in range(nout - 1, -1, -1):
