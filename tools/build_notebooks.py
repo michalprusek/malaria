@@ -427,6 +427,58 @@ print("To je laťka. V dalších sekcích ji zkusíme překonat vlastní neurono
 """))
 
 student.append(md(r"""
+### Jak vznikne ta pravděpodobnost?
+
+k-NN nevydává tvrdé „ano/ne", ale **pravděpodobnost**: najde k nejbližších sousedů a vezme
+**vážený podíl** těch napadených, kde bližší soused váží víc (`váha = 1 / vzdálenost`). Ukažme
+si to na jedné konkrétní buňce — spočítáme to ručně a porovnáme se `sklearn`.
+"""))
+
+student.append(code(r"""
+i = 0  # 🔬 zkus jiný index buňky
+dist, nbr = knn.kneighbors(X_val_s[i:i+1], n_neighbors=K)   # vzdálenosti a indexy K sousedů
+dist, nbr = dist[0], nbr[0]
+labels = y_train[nbr]                       # třídy sousedů (1 = napadená)
+w = 1.0 / np.maximum(dist, 1e-12)           # vzdálenostní váhy (bližší = větší)
+p_rucne = w[labels == 1].sum() / w.sum()    # vážený podíl napadených sousedů
+
+print("vzdálenosti 5 nejbližších:", np.round(dist[:5], 3))
+print("jejich třídy:            ", labels[:5], "(1 = napadená)")
+print(f"napadených mezi {K} sousedy: {int(labels.sum())}/{K}")
+print(f"ruční pravděpodobnost (vážená): {p_rucne:.3f}")
+print(f"sklearn predict_proba:          {knn.predict_proba(X_val_s[i:i+1])[0, 1]:.3f}")
+print("→ sedí: pravděpodobnost = vážený podíl napadených mezi sousedy.")
+"""))
+
+student.append(md(r"""
+### A jak zvolit práh?
+
+Z pravděpodobnosti uděláme rozhodnutí až **prahem**. Práh 0,5 není svatý — volíme ho podle
+cíle. My chceme zachytit **aspoň 99 % nemocných**, takže práh *snižujeme*, dokud senzitivita
+nevyleze na 99 % (na **ověřovací** sadě, nikdy na testu!). Uvidíme, že u k-NN přitom specificita
+spadne skoro k nule — proto baseline na tu laťku nedosáhne.
+"""))
+
+student.append(code(r"""
+from sklearn.metrics import roc_curve
+
+fpr, tpr, thr = roc_curve(y_val, knn_val_prob)      # tpr = senzitivita, fpr = 1 - specificita
+ok = tpr >= 0.99
+j = int(np.argmin(np.where(ok, fpr, 2.0)))          # nejmenší falešné poplachy při senz. >= 99 %
+print(f"práh pro senzitivitu ≥ 99 %: {thr[j]:.3f}")
+print(f"  → senzitivita = {tpr[j]:.3f},  specificita = {1 - fpr[j]:.3f}")
+
+print("\npro srovnání pár pevných prahů:")
+print(" práh | senzitivita | specificita")
+for t in [0.3, 0.5, 0.7, 0.9]:
+    yp = (knn_val_prob >= t).astype(int)
+    se = yp[y_val == 1].mean()                      # podíl zachycených nemocných
+    sp = 1 - yp[y_val == 0].mean()                  # podíl správně propuštěných zdravých
+    print(f" {t:.2f} |    {se:.3f}    |    {sp:.3f}")
+print("\nNižší práh = víc záchytů (↑ senzitivita), ale i víc falešných poplachů (↓ specificita).")
+"""))
+
+student.append(md(r"""
 ## 7 · Vaše vlastní klasifikační hlava 🔬
 
 Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**, která má překonat oba
