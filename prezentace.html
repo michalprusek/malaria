@@ -579,26 +579,30 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
-  <!-- 12 ZÁVĚR -->
+  <!-- ÚKOL / PRAVIDLA SOUTĚŽE -->
   <section class="slide">
     <div class="wrap">
-      <div class="kicker reveal" style="--i:0">Shrnutí</div>
-      <h2 class="reveal" style="--i:1">Mezi notebookem a dopadem<br>na zdravotnictví není daleko</h2>
-      <div class="grid2" style="margin-top:.6rem">
-        <ul class="list">
-          <li class="reveal" style="--i:2"><span><strong>Přenosové učení</strong> — zmrazený ResNet jako extraktor featur.</span></li>
-          <li class="reveal" style="--i:3"><span>Featury <strong>samy oddělují</strong> třídy (PCA).</span></li>
-          <li class="reveal" style="--i:4"><span>V medicíně <strong>přesnost klame</strong> — počítá se senzitivita a specificita.</span></li>
-          <li class="reveal" style="--i:5"><span>Naučená hlava (MLP) <span class="teal">překonává</span> jednoduchý baseline.</span></li>
-        </ul>
-        <div class="reveal" style="--i:4">
-          <div class="card">
-            <h3>Děkujeme za pozornost</h3>
-            <p style="font-size:1rem">Michal Průšek &amp; Michal Bělohlávek<br><span style="color:#93a1b3">ÚTIA AV ČR · CIIRC · FJFI ČVUT</span></p>
-            <p class="foot">Materiály a notebook:<br><span class="teal">github.com/michalprusek/malaria</span></p>
+      <div class="kicker reveal" style="--i:0">Veletrh vědy · soutěž</div>
+      <h2 class="reveal" style="--i:1">Váš úkol</h2>
+      <div class="grid2" style="margin-top:.5rem">
+        <div>
+          <h3 class="reveal" style="--i:2">Pravidla</h3>
+          <ul class="list" style="margin-top:.5rem">
+            <li class="reveal" style="--i:3"><span>Použijte <strong>zmrazený ResNet encoder</strong> — featury jsou dané. <strong>Trénujte jen klasifikátor</strong> (hlavu); encoder se neučí.</span></li>
+            <li class="reveal" style="--i:4"><span>Stejná data pro oba týmy; odevzdáte <strong>pravděpodobnosti</strong> na skrytém testu.</span></li>
+            <li class="reveal" style="--i:5"><span><strong>ChatGPT povolen</strong> — ale svou metodu musíte umět <strong>srozumitelně odprezentovat</strong> všem, aby jí rozuměli.</span></li>
+          </ul>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="card" style="border-color:rgba(53,214,192,.5);box-shadow:0 0 40px rgba(53,214,192,.08)">
+            <h3>Vyhodnocení</h3>
+            <p>Senzitivitu <strong>zafixujeme na 99 %</strong> — musíte zachytit aspoň 99 % nemocných.</p>
+            <p style="margin-top:.5rem">Boduje se <span class="teal"><strong>specificita</strong></span> při této senzitivitě: kdo přitom <strong>nejméně</strong> zbytečně poplaší zdravé.</p>
+            <p style="margin-top:.7rem;font-size:1.1rem"><strong>🏆 Vyšší specificita vyhrává.</strong></p>
           </div>
         </div>
       </div>
+      <p class="foot reveal" style="--i:6;text-align:center;margin-top:1.5rem">Materiály a notebook: <span class="teal">github.com/michalprusek/malaria</span> &nbsp;·&nbsp; Michal Průšek &amp; Michal Bělohlávek</p>
     </div>
   </section>
 
