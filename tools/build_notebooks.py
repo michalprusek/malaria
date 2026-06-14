@@ -39,51 +39,29 @@ def build(cells, path, kernel="python3"):
 student = []
 
 student.append(md(r"""
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/michalprusek/malaria/blob/main/malaria_classifier_STUDENT.ipynb)
+
 # 🦟 Detekuje malárii lépe člověk, nebo notebook?
 
 ### Miniprojekt — Veletrh vědy · Katedra matematiky FJFI ČVUT
 
-Malárie každý rok zabije přibližně **600 000 lidí**. Drtivá většina obětí žije v oblastech,
-kde chybí vyškolení patologové, kteří by uměli pod mikroskopem rozpoznat parazita
-*Plasmodium* v krevním nátěru. Diagnóza přitom stojí na jediné otázce, opakované u tisíců
-buněk: **je tahle červená krvinka napadená, nebo zdravá?**
+Malárie každý rok zabije přibližně **600 000 lidí** — hlavně tam, kde chybí vyškolení
+patologové, kteří by pod mikroskopem poznali parazita *Plasmodium* v krevním nátěru. Celá
+diagnóza stojí na jediné otázce, opakované u tisíců buněk: **je tahle červená krvinka napadená,
+nebo zdravá?** Dnes ji zkusíme nechat řešit počítač — na **27 558 snímcích** buněk z datasetu
+NIH (polovina zdravých, polovina napadených).
 
-Co kdyby tu práci zvládl obyčejný mobil s dobře natrénovaným algoritmem?
-
-Dnes si to vyzkoušíme. Použijeme veřejný dataset amerického Národního institutu zdraví (NIH)
-s **27 558 mikroskopickými snímky** jednotlivých buněk — polovina zdravých, polovina
-napadených.
-
----
-
-### Co je hluboké učení a *transfer learning*?
-
-**Neuronová síť** je matematická funkce s miliony nastavitelných čísel (*vah*), kterou
-„naučíme" tím, že jí ukazujeme příklady a opravujeme její chyby. **Konvoluční** neuronová síť
-je typ, který se specializuje na obrázky — postupně z pixelů skládá hrany, textury, tvary.
-
-Natrénovat takovou síť od nuly vyžaduje miliony obrázků a hodiny počítání na výkonných
-grafických kartách. My na to nemáme čas ani data — a nemusíme. Použijeme **transfer learning**:
-
-> Vezmeme síť **ResNet**, kterou už někdo natrénoval na milionech běžných fotek
-> (psi, auta, židle…), a využijeme to, že se naučila *vidět* — rozpoznávat tvary a textury.
-> Tuhle „zrakovinu vidění" necháme **zmraženou** a dotrénujeme jen malou **klasifikační
-> hlavu**, která se rozhodne: *infikovaná, nebo zdravá?*
-
-To je celý dnešní trik. A protože je zbytek sítě zmražený, trénink poběží i na vašem
-notebooku **bez grafické karty** — během pár sekund.
-
----
+> **Připomenutí z přednášky:** zmrazený **ResNet** promění každý snímek buňky na **2048 čísel**
+> (*featury*). My netrénujeme ResNet — učíme jen malou **klasifikační hlavu**, která z těch 2048
+> čísel rozhodne *napadená / zdravá*. Proto vše běží i **bez grafické karty**, během pár sekund.
 
 ### Co dnes uděláte
 
-1. Podíváte se na skutečné snímky buněk.
-2. Pochopíte, jak ResNet promění obrázek na **2048 čísel** (tzv. *featury*).
-3. Postavíte jednoduchý **baseline (k-NN)** a pak ho překonáte **vlastní natrénovanou sítí.**
-4. Naučíte se, proč v medicíně **nestačí hlásit „95 % přesnost"** — a co je *senzitivita*,
-   *specificita* a *matice záměn*.
-5. **Soutěž!** Dva týmy proti sobě. Vyhrává model, který nejlépe zachytí nemocné, aniž by
-   příliš často zbytečně strašil zdravé.
+1. Podíváte se na skutečné buňky a na to, jak z nich vzniká **2048 čísel**.
+2. Postavíte jednoduchou **baseline (k-NN)** a překonáte ji **vlastní natrénovanou sítí**.
+3. Zjistíte, proč v medicíně **nestačí „95 % přesnost"** — co je *senzitivita*, *specificita*,
+   *matice záměn* a *ROC křivka*.
+4. **Soutěž!** Vyhrává model, který zachytí nemocné, aniž by zbytečně strašil zdravé.
 
 Vzhůru do toho. 🚀
 """))
@@ -268,21 +246,11 @@ plt.tight_layout(); plt.show()
 """))
 
 student.append(md(r"""
-## 3 · Co je *encoder* a *featury*
+## 3 · Od obrázku k 2048 číslům
 
-Lidské oko parazita pozná. Jak ho ale „uvidí" počítač, který zná jen čísla?
-
-Tady přichází na řadu **ResNet** — náš *encoder*. Je to konvoluční síť předtrénovaná na
-milionech fotek. Když jí předhodíme obrázek buňky, **promění ho na vektor 2048 čísel**.
-Tahle čísla shrnují, *co na obrázku je* — jaké tam jsou tvary, textury, skvrny. Říká se jim
-**featury** (příznaky).
-
-Klíčová myšlenka:
-
-> Encoder jsme **zmrazili** — neučí se. Jen překládá `obrázek → 2048 čísel`.
-> My pak učíme jen malou hlavu, která z těch 2048 čísel rozhodne *infikovaná / zdravá*.
-
-Načteme si připravené featury a podíváme se, jak vypadají.
+Počítač nevidí „fialovou tečku" — vidí čísla. **Zmrazený ResNet** (*encoder*) každý snímek
+přeloží na **2048 featur** (příznaků): stručné shrnutí toho, co na obrázku je. S těmihle čísly
+pak pracují všechny naše modely — obrázek už nevidí. Načteme si je a podíváme se, jak vypadají.
 """))
 
 student.append(code(r"""
@@ -298,6 +266,32 @@ print("\nKaždá buňka =", X_train.shape[1], "čísel.")
 print("Vyváženost tříd v tréninku:",
       "zdravých", int((y_train == 0).sum()), "| napadených", int((y_train == 1).sum()))
 print("\nPrvních 8 featur první buňky:", np.round(X_train[0, :8], 2))
+"""))
+
+student.append(md(r"""
+### Jak vypadá „obrázek → 2048 čísel"
+
+Vlevo skutečná buňka, vpravo jejích 2048 featur poskládaných do mřížky. Model rozhoduje **jen
+z těch čísel vpravo** — samotný obrázek nevidí. (Rozdíl mezi napadenou a zdravou je v těch
+číslech jemný a roztroušený — proto na to potřebujeme model, ne jen oko.)
+"""))
+
+student.append(code(r"""
+v_inf  = X_train[np.where(y_train == 1)[0][0]]      # featury jedné napadené buňky
+v_heal = X_train[np.where(y_train == 0)[0][0]]      # featury jedné zdravé buňky
+
+fig, ax = plt.subplots(2, 2, figsize=(11, 5), gridspec_kw={"width_ratios": [1, 2.4]})
+for r, (imgs, vec, name, col) in enumerate([
+        (paras, v_inf, "napadená", "crimson"),
+        (healthy, v_heal, "zdravá", "seagreen")]):
+    ax[r, 0].imshow(Image.open(imgs[0])); ax[r, 0].axis("off")
+    ax[r, 0].set_title(name, color=col, fontsize=12)
+    ax[r, 1].imshow(vec.reshape(32, 64), cmap="magma", aspect="auto")
+    ax[r, 1].set_title("jejích 2048 featur (mřížka 32×64)", fontsize=10)
+    ax[r, 1].set_xticks([]); ax[r, 1].set_yticks([])
+fig.suptitle("Každou buňku ResNet promění na 2048 čísel (vpravo).\n"
+             "Klasifikátor pak vidí jen ta čísla — obrázek už ne.", fontsize=12)
+plt.tight_layout(rect=[0, 0, 1, 0.9]); plt.show()
 """))
 
 student.append(md(r"""
@@ -351,37 +345,35 @@ print("připraveno:", Xtr.shape, "na zařízení", device)
 """))
 
 student.append(md(r"""
-## 5 · Lineární projekce do 2D (linear probe)
+## 5 · Nejjednodušší učený model: jedna lineární vrstva
 
-PCA jsme dělali „naslepo“ — bez znalosti správných odpovědí. Teď zkusíme opak: necháme
+PCA kreslila featury „naslepo“ — bez znalosti správných odpovědí. Teď zkusíme opak: necháme
 **jedinou lineární vrstvu** naučit se z 2048 featur **dvě čísla** (skóre pro „zdravá“ a pro
-„napadená“) přímo z labelů. Tomu se říká **linear probe** — lineární klasifikátor nasazený na
-zmrazené featury. Je to nejjednodušší *učený* model: featury jen zváží a sečte.
-
-Uvidíme, že i tahle jediná vrstva třídy slušně oddělí — a dostaneme názorný 2D obrázek
-s **dělící čarou** (tam, kde se obě skóre rovnají).
+„napadená“) přímo z labelů. Je to nejjednodušší *učený* model — featury jen zváží a sečte —
+a hned uvidíme, že třídy slušně oddělí. Dostaneme i názorný 2D obrázek s **dělící čarou**
+(tam, kde se obě skóre rovnají).
 """))
 
 student.append(code(r"""
 ytr_long = torch.tensor(y_train, dtype=torch.long, device=device)
 
-probe = nn.Linear(Xtr.shape[1], 2).to(device)        # 2048 featur → 2 skóre (zdravá, napadená)
-opt_p = torch.optim.Adam(probe.parameters(), lr=1e-3, weight_decay=1e-4)
+lin = nn.Linear(Xtr.shape[1], 2).to(device)          # 2048 featur → 2 skóre (zdravá, napadená)
+opt_lin = torch.optim.Adam(lin.parameters(), lr=1e-3)
 ce = nn.CrossEntropyLoss()
 for epoch in range(15):
-    probe.train()
+    lin.train()
     perm = torch.randperm(Xtr.shape[0], device=device)
     for i in range(0, Xtr.shape[0], 256):
         idx = perm[i:i + 256]
-        opt_p.zero_grad()
-        ce(probe(Xtr[idx]), ytr_long[idx]).backward()
-        opt_p.step()
+        opt_lin.zero_grad()
+        ce(lin(Xtr[idx]), ytr_long[idx]).backward()
+        opt_lin.step()
 
-probe.eval()
+lin.eval()
 with torch.no_grad():
-    z_val = probe(Xva).cpu().numpy()                 # 2D skóre pro ověřovací buňky
-probe_acc = (z_val.argmax(1) == y_val).mean()
-print(f"Linear probe — přesnost na ověření: {probe_acc:.4f}")
+    z_val = lin(Xva).cpu().numpy()                    # 2D skóre pro ověřovací buňky
+lin_acc = (z_val.argmax(1) == y_val).mean()
+print(f"Lineární vrstva — přesnost na ověření: {lin_acc:.4f}")
 """))
 
 student.append(code(r"""
@@ -392,15 +384,15 @@ for label, name, col in [(0, "zdravá", "seagreen"), (1, "napadená", "crimson")
 lim = [float(z_val.min()), float(z_val.max())]
 plt.plot(lim, lim, ls="--", color="gray", label="dělící čára (skóre stejné)")
 plt.xlabel("skóre: zdravá"); plt.ylabel("skóre: napadená")
-plt.legend(); plt.title(f"Linear probe — 2D projekce (přesnost {probe_acc:.3f})")
+plt.legend(); plt.title(f"Jedna lineární vrstva — 2D projekce (přesnost {lin_acc:.3f})")
 plt.show()
 """))
 
 student.append(md(r"""
-## 6 · Druhý baseline: k nejbližších sousedů (k-NN)
+## 6 · Baseline: k nejbližších sousedů (k-NN)
 
-Vedle lineárního probu zkusíme i **model úplně bez učení** — další laťku, kterou se pak budeme
-snažit překonat. Použijeme **k-NN** (*k nearest neighbors*, k nejbližších sousedů):
+Naše **baseline** bude co nejjednodušší model — laťka, kterou se pak budeme snažit překonat.
+Použijeme **k-NN** (*k nearest neighbors*, k nejbližších sousedů):
 
 > Chceš zařadit novou buňku? Najdi mezi trénovacími buňkami **k nejpodobnějších** (nejbližších
 > v prostoru featur) a nech je **hlasovat**. Bližší sousedé váží víc. Podíl hlasů pro
@@ -424,30 +416,6 @@ knn_val_prob = knn.predict_proba(X_val_s)[:, 1]   # pravděpodobnost "napadená"
 knn_acc = ((knn_val_prob > 0.5).astype(int) == y_val).mean()
 print(f"k-NN baseline — přesnost na ověření: {knn_acc:.4f}")
 print("To je laťka. V dalších sekcích ji zkusíme překonat vlastní neuronovou sítí.")
-"""))
-
-student.append(md(r"""
-### Jak vznikne ta pravděpodobnost?
-
-k-NN nevydává tvrdé „ano/ne", ale **pravděpodobnost**: najde k nejbližších sousedů a vezme
-**vážený podíl** těch napadených, kde bližší soused váží víc (`váha = 1 / vzdálenost`). Ukažme
-si to na jedné konkrétní buňce — spočítáme to ručně a porovnáme se `sklearn`.
-"""))
-
-student.append(code(r"""
-i = 0  # 🔬 zkus jiný index buňky
-dist, nbr = knn.kneighbors(X_val_s[i:i+1], n_neighbors=K)   # vzdálenosti a indexy K sousedů
-dist, nbr = dist[0], nbr[0]
-labels = y_train[nbr]                       # třídy sousedů (1 = napadená)
-w = 1.0 / np.maximum(dist, 1e-12)           # vzdálenostní váhy (bližší = větší)
-p_rucne = w[labels == 1].sum() / w.sum()    # vážený podíl napadených sousedů
-
-print("vzdálenosti 5 nejbližších:", np.round(dist[:5], 3))
-print("jejich třídy:            ", labels[:5], "(1 = napadená)")
-print(f"napadených mezi {K} sousedy: {int(labels.sum())}/{K}")
-print(f"ruční pravděpodobnost (vážená): {p_rucne:.3f}")
-print(f"sklearn predict_proba:          {knn.predict_proba(X_val_s[i:i+1])[0, 1]:.3f}")
-print("→ sedí: pravděpodobnost = vážený podíl napadených mezi sousedy.")
 """))
 
 student.append(md(r"""
@@ -483,24 +451,22 @@ print("\nNižší práh = víc záchytů (↑ senzitivita), ale i víc falešný
 student.append(md(r"""
 ## 7 · Vaše vlastní klasifikační hlava 🔬
 
-Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**, která má překonat oba
-baseline. Dostane na vstupu 2048 featur a na výstupu vydá jediné číslo (*logit*), které po
+Teď to nejzábavnější — **navrhnete vlastní malou neuronovou síť**, která má překonat baseline
+(k-NN). Dostane na vstupu 2048 featur a na výstupu vydá jediné číslo (*logit*), které po
 převedení funkcí *sigmoid* říká **pravděpodobnost, že je buňka napadená**.
 
-Baseline níže má jednu skrytou vrstvu. **Tady experimentujte:**
+Výchozí síť níže má jednu skrytou vrstvu. **Tady experimentujte:**
 - `hidden` — kolik neuronů má skrytá vrstva (víc = větší kapacita, ale i riziko přeučení),
-- `dropout` — náhodně „vypne" část neuronů při tréninku, brání přeučení (0 až ~0.5),
-- můžete přidat **další vrstvy** (`nn.Linear`, `nn.ReLU`, `nn.Dropout`).
+- můžete přidat **další vrstvy** (`nn.Linear`, `nn.ReLU`).
 """))
 
 student.append(code(r"""
 class Hlava(nn.Module):
-    def __init__(self, in_dim=2048, hidden=128, dropout=0.3):   # 🔬 EXPERIMENT: hidden, dropout
+    def __init__(self, in_dim=2048, hidden=128):   # 🔬 EXPERIMENT: hidden
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(in_dim, hidden),
             nn.ReLU(),
-            nn.Dropout(dropout),
             nn.Linear(hidden, 1),       # 🔬 EXPERIMENT: zkus přidat další vrstvy nad tenhle řádek
         )
 
@@ -508,7 +474,7 @@ class Hlava(nn.Module):
         return self.net(x).squeeze(1)   # vrací logit, tvar (batch,)
 
 
-model = Hlava(in_dim=Xtr.shape[1], hidden=128, dropout=0.3).to(device)
+model = Hlava(in_dim=Xtr.shape[1], hidden=128).to(device)
 print(model)
 print("počet trénovaných vah:", sum(p.numel() for p in model.parameters()))
 """))
@@ -523,7 +489,6 @@ Trénink znamená: model hádá, porovnáme jeho odhad se správnou odpovědí, 
 Páky, se kterými si můžete hrát:
 - `EPOCHS` — kolikrát projdeme data (víc se naučí, ale může se přeučit),
 - `LR` (learning rate) — velikost krůčku při učení,
-- `WEIGHT_DECAY` — mírná penalizace velkých vah, brání přeučení,
 - `POS_WEIGHT` — **jak draho stojí přehlédnutý nemocný**. Hodnota > 1 nutí model brát napadené
   buňky vážněji (zvýší senzitivitu na úkor falešných poplachů). To je přímo páka na medicínský
   kompromis, o kterém bude řeč v sekci 9!
@@ -534,12 +499,11 @@ student.append(code(r"""
 EPOCHS       = 25
 BATCH        = 256
 LR           = 1e-3
-WEIGHT_DECAY = 1e-4
 POS_WEIGHT   = 1.0      # > 1 = přísnější na přehlédnuté nemocné
 # ===========================================
 
 loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(POS_WEIGHT, device=device))
-opt = torch.optim.Adam(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
+opt = torch.optim.Adam(model.parameters(), lr=LR)
 
 hist = {"train_loss": [], "val_acc": []}
 n = Xtr.shape[0]
@@ -656,17 +620,25 @@ spec99_knn, _, _ = specificita_pri_senzitivite(y_val, knn_val_prob, 0.99)
 
 plt.figure(figsize=(6, 6))
 plt.plot(fpr, tpr, lw=2, label=f"vaše síť (spec={spec99:.3f})")
-plt.plot(fpr_k, tpr_k, lw=2, ls="--", color="gray", label=f"k-NN baseline (spec={spec99_knn:.3f})")
-plt.axhline(0.99, ls=":", color="crimson", label="požadovaná senzitivita 99 %")
-plt.scatter([1 - spec99], [sens99], color="crimson", zorder=5)
+plt.plot(fpr_k, tpr_k, lw=2, ls="--", color="gray", label="k-NN baseline")
+plt.axhline(0.99, ls=":", color="crimson", lw=1, label="požadovaná senzitivita 99 %")
 plt.plot([0, 1], [0, 1], ls=":", color="lightgray")
-plt.xlabel("1 − specificita  (falešné poplachy)"); plt.ylabel("senzitivita")
-plt.title("ROC křivka — vaše síť vs. baseline"); plt.legend(loc="lower right"); plt.show()
+
+# bod, který zvolíme prahem: nejvyšší specificita při senzitivitě >= 99 %
+x_op, y_op = 1 - spec99, sens99
+plt.scatter([x_op], [y_op], color="crimson", s=90, zorder=5, label="náš zvolený bod")
+plt.vlines(x_op, 0, y_op, color="crimson", ls="--", lw=1)   # dolů na osu x: 1 − specificita
+plt.hlines(y_op, 0, x_op, color="crimson", ls="--", lw=1)   # vlevo na osu y: senzitivita
+plt.annotate(f"senzitivita = {y_op:.2f}\n1 − spec = {x_op:.2f}  (spec = {spec99:.2f})",
+             (x_op, y_op), textcoords="offset points", xytext=(14, -34),
+             color="crimson", fontsize=9, arrowprops=dict(arrowstyle="->", color="crimson"))
+
+plt.xlim(0, 1); plt.ylim(0, 1.03)
+plt.xlabel("1 − specificita  (falešné poplachy)"); plt.ylabel("senzitivita (záchyt nemocných)")
+plt.title("ROC křivka — náš zvolený bod"); plt.legend(loc="lower right"); plt.show()
 
 print(f"➡️  SOUTĚŽNÍ SKÓRE (na ověření): specificita @ senzitivita≥99 % = {spec99:.3f}")
-print(f"    (odpovídající práh = {prah99:.3f}, dosažená senzitivita = {sens99:.3f})")
-print(f"    k-NN baseline = {spec99_knn:.3f}  →  "
-      f"{'PŘEKONÁNO! 🎉' if spec99 > spec99_knn else 'zatím ne — laďte dál'}")
+print(f"    (skutečně zachyceno {sens99 * 100:.1f} % nemocných)")
 """))
 
 student.append(md(r"""
@@ -703,15 +675,14 @@ na skrytém testu (a samozřejmě překonat baseline). Páky, které máte k dis
 | kde | páka | co zkusit |
 |---|---|---|
 | sekce 6 | `K` u k-NN | jiný počet sousedů — posune baseline (zkuste, jestli k-NN vůbec dotáhnete) |
-| sekce 7 | architektura hlavy | větší `hidden`, jiný `dropout`, další vrstvy |
+| sekce 7 | architektura hlavy | větší `hidden`, další vrstvy |
 | sekce 8 | `EPOCHS` | víc epoch — ale pozor na přeučení (sledujte ověření) |
 | sekce 8 | `LR` | např. 3e-4, 1e-3, 3e-3 |
-| sekce 8 | `WEIGHT_DECAY` | větší hodnota brzdí přeučení |
 | sekce 8 | `POS_WEIGHT` | > 1 zvýší senzitivitu (přísnější na nemocné) |
 | sekce 4 | standardizace | už zapnutá — zkuste, jaký je rozdíl bez ní |
 
-**Postup:** změňte jednu věc → spusťte sekce 7, 8, 9 → podívejte se na soutěžní skóre →
-opakujte. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
+**Postup:** nejrychleji laďte dole v **Hřišti (sekce 13)** — upravte jednu páku, spusťte,
+sledujte `spec@99 %`. Vždycky měňte **jen jednu věc**, ať víte, co pomohlo.
 
 > 💡 Tip: musíte zachytit 99 % nemocných. Když si model není jistý, musí kvůli tomu posunout
 > práh hodně nízko a označí spoustu zdravých → specificita spadne (klidně až na nulu). Hledáte
@@ -753,25 +724,126 @@ except Exception:
 """))
 
 student.append(md(r"""
-## 🎓 Co jste se naučili
+## ❓ Otázky k zamyšlení
 
-- **Transfer learning**: stačí dotrénovat malou hlavu nad zmraženým ResNetem — žádné
-  superpočítače, žádné miliony obrázků.
-- Featury jsou **2048 čísel**, do kterých předtrénovaná síť zhustila „co na obrázku je".
-- **Baseline vs. učení**: k-NN si data jen pamatuje a ve 2048 rozměrech tápe; trénovaná síť se
-  naučí, na čem záleží — proto baseline výrazně překoná. (Dobrý baseline ale vždy chcete mít,
-  abyste věděli, co váš model vlastně přidává.)
-- **Přesnost klame.** V medicíně sledujeme **senzitivitu** (nepřehlédnout nemocného) a
-  **specificitu** (nestrašit zdravé), čteme **matici záměn** a **ROC křivku**.
-- **Práh** je rozhodnutí o ceně chyby — a ta cena není symetrická.
-
-### Otázky k zamyšlení
 1. Proč by se model nasazený v nemocnici mohl chovat hůř než tady na datasetu? (Jiný mikroskop,
    jiné barvení, jiná populace pacientů…)
 2. Měla by konečné rozhodnutí dělat AI sama, nebo jen *upozorňovat* lékaře? Kde nastavit práh?
 3. Co by se stalo se senzitivitou, kdyby byla v reálu napadená jen **1 %** buněk?
+"""))
 
-**Gratulace — mezi vaším notebookem a reálným dopadem na zdravotnictví není tak daleko. 🦟➡️🩺**
+student.append(md(r"""
+## 12 · Chcete zkusit jiný model než MLP?
+
+MLP není jediná možnost — nad těmihle 2048 featurami funguje spousta klasifikátorů. Klidně se
+zeptejte **ChatGPT/Claude** na *logistickou regresi, SVM, random forest* nebo *gradient
+boosting*. Dvě pravidla, ať to dává smysl pro soutěž:
+
+1. Model musí vydat **pravděpodobnost** (nebo skóre) — soutěžní metrika počítá s pořadím, ne s ano/ne.
+2. Pro lineární modely / SVM / k-NN nechte zapnutou **standardizaci** (`X_train_s`); stromy a boosting ji nepotřebují.
+
+Příklad — *gradient boosting* ze `sklearn` projde úplně stejným měřením jako vaše síť:
+"""))
+
+student.append(code(r"""
+from sklearn.ensemble import HistGradientBoostingClassifier
+
+gb = HistGradientBoostingClassifier(max_iter=300, learning_rate=0.1).fit(X_train_s, y_train)
+gb_prob = gb.predict_proba(X_val_s)[:, 1]
+gb_spec, _, _ = specificita_pri_senzitivite(y_val, gb_prob, 0.99)
+print(f"gradient boosting — spec@99 % = {gb_spec:.3f}")
+print("(porovnejte se svou MLP a s k-NN baseline)")
+"""))
+
+student.append(md(r"""
+## 13 · 🔬 Hřiště — rychlé experimenty
+
+Tady laďte naplno a bez scrollování. Spusťte **jednou** buňku s pomocnou funkcí
+`experiment(...)` (hned pod tímhle textem) — tu už pak nemusíte měnit, můžete ji sbalit.
+Potom jen **upravujte úplně poslední buňku** a mačkejte **Ctrl+Enter**:
+
+- **Hyperparametry** nahoře jsou obyčejná čísla: `epochs`, `lr`, `pos_weight`.
+- **Architektura** pod nimi je seznam vrstev (`nn.Sequential`). Přidávejte a ubírejte řádky:
+  `nn.Linear(z, na)` mění rozměr, `nn.ReLU()` přidá nelinearitu. Vstup musí být **2048**,
+  poslední vrstva musí být **`nn.Linear(..., 1)`**.
+
+Po každém spuštění uvidíte své `spec@99 %`, porovnání s baseline a dosavadní nejlepší. Až
+budete spokojení, dejte `submit=True` a uloží se odevzdání.
+"""))
+
+student.append(code(r"""
+# Pomocná funkce pro Hřiště — spusťte JEDNOU, pak ji můžete sbalit a nevšímat si jí.
+# Bere hotový model (nn.Sequential) + hyperparametry, natrénuje a změří spec@99 %.
+BEST = {"spec": 0.0}
+
+def experiment(model, epochs=25, lr=1e-3, pos_weight=1.0, plot=True, submit=False):
+    from sklearn.metrics import roc_curve
+    model = model.to(device)
+    loss_fn = nn.BCEWithLogitsLoss(pos_weight=torch.tensor(pos_weight, device=device))
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    n = Xtr.shape[0]
+    for _ in range(epochs):
+        model.train()
+        perm = torch.randperm(n, device=device)
+        for i in range(0, n, 256):
+            idx = perm[i:i + 256]
+            opt.zero_grad()
+            loss_fn(model(Xtr[idx]).squeeze(-1), ytr[idx]).backward()
+            opt.step()
+    model.eval()
+    with torch.no_grad():
+        prob = torch.sigmoid(model(Xva).squeeze(-1)).cpu().numpy()
+    spec, prah, sens = specificita_pri_senzitivite(y_val, prob, 0.99)
+    acc = ((prob > 0.5).astype(int) == y_val).mean()
+    flag = "🏆 NOVÉ NEJLEPŠÍ!" if spec > BEST["spec"] else f"(vaše nejlepší zatím: {BEST['spec']:.3f})"
+    BEST["spec"] = max(BEST["spec"], spec)
+    print(f"spec@99 % = {spec:.3f}   |   přesnost = {acc:.3f}   |   {flag}")
+    if plot:
+        fpr, tpr, _ = roc_curve(y_val, prob)
+        x_op, y_op = 1 - spec, sens
+        plt.figure(figsize=(5, 5))
+        plt.plot(fpr, tpr, lw=2, label=f"váš model (spec={spec:.3f})")
+        plt.plot(fpr_k, tpr_k, ls="--", color="gray", label="k-NN baseline")
+        plt.axhline(0.99, ls=":", color="crimson"); plt.plot([0, 1], [0, 1], ls=":", color="lightgray")
+        plt.scatter([x_op], [y_op], color="crimson", s=70, zorder=5)
+        plt.vlines(x_op, 0, y_op, color="crimson", ls="--", lw=1)
+        plt.hlines(y_op, 0, x_op, color="crimson", ls="--", lw=1)
+        plt.annotate(f"1 − spec = {x_op:.2f}\nsenz. = {y_op:.2f}", (x_op, y_op),
+                     textcoords="offset points", xytext=(8, -34), color="crimson", fontsize=8)
+        plt.xlim(0, 1); plt.ylim(0, 1.03)
+        plt.xlabel("1 − specificita"); plt.ylabel("senzitivita")
+        plt.legend(loc="lower right"); plt.title("ROC — váš zvolený bod"); plt.show()
+    if submit:
+        Xte_ = torch.tensor(scaler.transform(np.load("test_features.npz")["X"].astype(np.float32)),
+                            dtype=torch.float32, device=device)
+        with torch.no_grad():
+            tp = torch.sigmoid(model(Xte_).squeeze(-1)).cpu().numpy()
+        fn_ = f"predikce_{TEAM_NAME}.csv"
+        np.savetxt(fn_, tp, fmt="%.6f", header="prob", comments="")
+        print(f"📤 uloženo {fn_} ({len(tp)} buněk) — odevzdejte školiteli")
+    return model
+"""))
+
+student.append(code(r"""
+# ===================== 🔬 HŘIŠTĚ — upravte a spusťte (Ctrl+Enter) =====================
+torch.manual_seed(SEED)                  # stejný start → porovnatelné výsledky
+
+# HYPERPARAMETRY — měňte čísla
+epochs     = 25
+lr         = 1e-3
+pos_weight = 1.0       # > 1 = přísnější na přehlédnuté nemocné
+
+# ARCHITEKTURA — skládejte vrstvy. Vstup 2048, poslední vrstva musí být Linear(..., 1).
+model = nn.Sequential(
+    nn.Linear(2048, 256),
+    nn.ReLU(),
+    nn.Linear(256, 1),
+    # hlubší síť? např.:  nn.Linear(2048, 512), nn.ReLU(),
+    #                     nn.Linear(512, 128),  nn.ReLU(), nn.Linear(128, 1)
+)
+
+experiment(model, epochs=epochs, lr=lr, pos_weight=pos_weight, submit=False)   # submit=True → uloží predikce_<TÝM>.csv
+# =====================================================================================
 """))
 
 build(student, "malaria_classifier_STUDENT.ipynb")
