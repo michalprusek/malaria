@@ -53,6 +53,45 @@ def style_axes(ax):
     ax.grid(True, color=GRID, lw=0.6, alpha=0.6)
 
 
+def conv_anim_svg():
+    """Animovaný SVG: filtr 3×3 klouže po vstupu 5×5, mapa příznaků se postupně plní."""
+    cell, ix, iy, ox, oy, dur = 22, 16, 24, 350, 46, "7.2s"
+    offs = [(c * cell, r * cell) for r in range(3) for c in range(3)]
+    vals = ";".join(f"{dx} {dy}" for dx, dy in offs)
+    p = ['<svg class="svgbox" viewBox="0 0 470 200" fill="none" font-family="IBM Plex Mono">',
+         '<defs><marker id="ca" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">'
+         '<path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>']
+    # vstupní mřížka 5×5
+    p.append(f'<rect x="{ix}" y="{iy}" width="{5*cell}" height="{5*cell}" rx="4" fill="rgba(255,255,255,.04)" stroke="var(--line)"/>')
+    for k in range(1, 5):
+        p.append(f'<line x1="{ix+k*cell}" y1="{iy}" x2="{ix+k*cell}" y2="{iy+5*cell}" stroke="var(--line)"/>')
+        p.append(f'<line x1="{ix}" y1="{iy+k*cell}" x2="{ix+5*cell}" y2="{iy+k*cell}" stroke="var(--line)"/>')
+    p.append(f'<text x="{ix+5*cell//2}" y="{iy+5*cell+18}" fill="#93a1b3" font-size="10" text-anchor="middle">vstup — filtr klouže</text>')
+    # výstupní mřížka 3×3
+    p.append(f'<rect x="{ox}" y="{oy}" width="{3*cell}" height="{3*cell}" rx="4" fill="rgba(255,255,255,.03)" stroke="var(--line)"/>')
+    for k in range(1, 3):
+        p.append(f'<line x1="{ox+k*cell}" y1="{oy}" x2="{ox+k*cell}" y2="{oy+3*cell}" stroke="var(--line)"/>')
+        p.append(f'<line x1="{ox}" y1="{oy+k*cell}" x2="{ox+3*cell}" y2="{oy+k*cell}" stroke="var(--line)"/>')
+    p.append(f'<text x="{ox+3*cell//2}" y="{oy+3*cell+18}" fill="#93a1b3" font-size="10" text-anchor="middle">mapa příznaků</text>')
+    # postupné plnění výstupních buněk (trail)
+    for k, (r, c) in enumerate([(r, c) for r in range(3) for c in range(3)]):
+        t = max(k / 9.0, 0.0001)
+        p.append(f'<rect x="{ox+c*cell+1}" y="{oy+r*cell+1}" width="{cell-2}" height="{cell-2}" fill="#35d6c0" fill-opacity="0">'
+                 f'<animate attributeName="fill-opacity" values="0;0.5" keyTimes="0;{t:.4f}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
+    # šipka + Σ mezi mřížkami
+    midy = oy + 3 * cell // 2
+    p.append(f'<line x1="{ix+5*cell+8}" y1="{midy}" x2="{ox-10}" y2="{midy}" stroke="#35d6c0" stroke-width="1.4" marker-end="url(#ca)" opacity=".8"/>')
+    p.append(f'<text x="{(ix+5*cell+ox)//2}" y="{midy-8}" fill="#cdd6e2" font-size="10" text-anchor="middle">Σ vážený součet</text>')
+    # klouzající filtr nad vstupem
+    p.append(f'<rect x="{ix}" y="{iy}" width="{3*cell}" height="{3*cell}" fill="rgba(53,214,192,.22)" stroke="#35d6c0" stroke-width="2">'
+             f'<animateTransform attributeName="transform" type="translate" values="{vals}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
+    # aktivní výstupní buňka v synchronu
+    p.append(f'<rect x="{ox}" y="{oy}" width="{cell}" height="{cell}" fill="none" stroke="#35d6c0" stroke-width="2.5">'
+             f'<animateTransform attributeName="transform" type="translate" values="{vals}" calcMode="discrete" dur="{dur}" repeatCount="indefinite"/></rect>')
+    p.append('</svg>')
+    return "".join(p)
+
+
 # ---------- data ----------
 tr = np.load("train.npz"); te = np.load("test_features.npz"); tl = np.load("test_labels.npz")
 Xtr, ytr = tr["X"].astype(np.float32), tr["y"]
@@ -419,35 +458,7 @@ strong{color:#fff;font-weight:600}
           </ul>
         </div>
         <div class="reveal" style="--i:3">
-          <svg class="svgbox" viewBox="0 0 480 180" fill="none" font-family="IBM Plex Mono">
-            <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
-              <path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>
-            <g stroke="var(--line)">
-              <rect x="16" y="20" width="110" height="110" rx="4" fill="rgba(255,255,255,.04)"/>
-              <line x1="38" y1="20" x2="38" y2="130"/><line x1="60" y1="20" x2="60" y2="130"/>
-              <line x1="82" y1="20" x2="82" y2="130"/><line x1="104" y1="20" x2="104" y2="130"/>
-              <line x1="16" y1="42" x2="126" y2="42"/><line x1="16" y1="64" x2="126" y2="64"/>
-              <line x1="16" y1="86" x2="126" y2="86"/><line x1="16" y1="108" x2="126" y2="108"/>
-            </g>
-            <rect x="16" y="20" width="66" height="66" fill="rgba(53,214,192,.22)" stroke="#35d6c0" stroke-width="1.6"/>
-            <text x="71" y="150" fill="#93a1b3" font-size="11" text-anchor="middle">vstup (pixely)</text>
-            <g stroke="#35d6c0">
-              <rect x="190" y="34" width="60" height="60" rx="4" fill="rgba(53,214,192,.14)"/>
-              <line x1="210" y1="34" x2="210" y2="94"/><line x1="230" y1="34" x2="230" y2="94"/>
-              <line x1="190" y1="54" x2="250" y2="54"/><line x1="190" y1="74" x2="250" y2="74"/>
-            </g>
-            <text x="220" y="112" fill="#35d6c0" font-size="11" text-anchor="middle">filtr 3×3</text>
-            <g stroke="var(--line)">
-              <rect x="338" y="34" width="66" height="66" rx="4" fill="rgba(255,255,255,.04)"/>
-              <line x1="360" y1="34" x2="360" y2="100"/><line x1="382" y1="34" x2="382" y2="100"/>
-              <line x1="338" y1="56" x2="404" y2="56"/><line x1="338" y1="78" x2="404" y2="78"/>
-            </g>
-            <rect x="338" y="34" width="22" height="22" fill="rgba(53,214,192,.55)"/>
-            <text x="371" y="120" fill="#93a1b3" font-size="11" text-anchor="middle">mapa příznaků</text>
-            <path d="M84 53 L188 60" stroke="#35d6c0" stroke-width="1.2" stroke-dasharray="3 3" opacity=".7"/>
-            <path d="M252 62 L335 47" stroke="#35d6c0" stroke-width="1.6" opacity=".9" marker-end="url(#ah)"/>
-            <text x="296" y="30" fill="#cdd6e2" font-size="11" text-anchor="middle">Σ vážený součet</text>
-          </svg>
+          __CONV_SVG__
         </div>
       </div>
     </div>
@@ -643,11 +654,53 @@ strong{color:#fff;font-weight:600}
     </div>
   </section>
 
+  <!-- MLP VYSVĚTLENÍ -->
+  <section class="slide">
+    <div class="wrap grid2">
+      <div>
+        <div class="kicker reveal" style="--i:0">Naučená hlava · jak to funguje</div>
+        <h2 class="reveal" style="--i:1">Neuron: zváží,<br>sečte, rozhodne</h2>
+        <ul class="list">
+          <li class="reveal" style="--i:2"><span><strong>Neuron</strong> vezme vstupy, každý znásobí vlastní <strong>vahou</strong>, sečte (+ práh) — jedno číslo.</span></li>
+          <li class="reveal" style="--i:3"><span><strong>Aktivace</strong> (ReLU: zápor → 0) přidá <span class="teal">nelinearitu</span>. Bez ní by celá síť byla jen lineární — jako linear probe.</span></li>
+          <li class="reveal" style="--i:4"><span><strong>Skrytá vrstva</strong> neuronů kombinuje featury do nových; výstupní neuron dá přes sigmoid <strong>pravděpodobnost napadení</strong>.</span></li>
+          <li class="reveal" style="--i:5"><span><strong>Učení</strong> = zpětné šíření chyby: váhy se po malých krocích posouvají tak, aby chyba klesala.</span></li>
+        </ul>
+      </div>
+      <div class="reveal" style="--i:3">
+        <svg class="svgbox" viewBox="0 0 400 200" fill="none" font-family="IBM Plex Mono">
+          <defs><marker id="nrn" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0 0 L6 3 L0 6 z" fill="#35d6c0"/></marker></defs>
+          <g>
+            <circle cx="34" cy="46" r="13" fill="rgba(255,255,255,.06)" stroke="var(--line)"/><text x="34" y="50" fill="#cdd6e2" font-size="11" text-anchor="middle">x₁</text>
+            <circle cx="34" cy="96" r="13" fill="rgba(255,255,255,.06)" stroke="var(--line)"/><text x="34" y="100" fill="#cdd6e2" font-size="11" text-anchor="middle">x₂</text>
+            <circle cx="34" cy="146" r="13" fill="rgba(255,255,255,.06)" stroke="var(--line)"/><text x="34" y="150" fill="#cdd6e2" font-size="11" text-anchor="middle">x₃</text>
+          </g>
+          <text x="34" y="182" fill="#93a1b3" font-size="9" text-anchor="middle">… 2048 featur</text>
+          <g stroke="#35d6c0" stroke-width="1.3" opacity=".8">
+            <line x1="47" y1="46" x2="180" y2="96"/><line x1="47" y1="96" x2="180" y2="96"/><line x1="47" y1="146" x2="180" y2="96"/>
+          </g>
+          <g fill="#35d6c0" font-size="9"><text x="108" y="56">w₁</text><text x="112" y="88">w₂</text><text x="108" y="134">w₃</text></g>
+          <circle cx="202" cy="96" r="22" fill="rgba(53,214,192,.10)" stroke="rgba(53,214,192,.5)"/>
+          <text x="202" y="100" fill="#eaf0f7" font-size="12" text-anchor="middle">Σ +b</text>
+          <text x="202" y="140" fill="#93a1b3" font-size="9" text-anchor="middle">vážený součet</text>
+          <line x1="224" y1="96" x2="252" y2="96" stroke="#35d6c0" stroke-width="1.4" marker-end="url(#nrn)"/>
+          <rect x="254" y="76" width="64" height="40" rx="8" fill="rgba(255,255,255,.05)" stroke="var(--line)"/>
+          <text x="286" y="100" fill="#cdd6e2" font-size="11" text-anchor="middle">ReLU</text>
+          <text x="286" y="140" fill="#93a1b3" font-size="9" text-anchor="middle">aktivace</text>
+          <line x1="318" y1="96" x2="350" y2="96" stroke="#35d6c0" stroke-width="1.4" marker-end="url(#nrn)"/>
+          <circle cx="368" cy="96" r="10" fill="#fff" stroke="var(--crimson)" stroke-width="2.5"/>
+          <text x="368" y="124" fill="#93a1b3" font-size="9" text-anchor="middle">výstup</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
   <!-- 11 MLP -->
   <section class="slide">
     <div class="wrap grid2">
       <div>
-        <div class="kicker reveal" style="--i:0">Naučená hlava · MLP</div>
+        <div class="kicker reveal" style="--i:0">Naučená hlava · výsledek</div>
         <h2 class="reveal" style="--i:1">Malá síť, která se<br><span class="teal">naučí, na čem záleží</span></h2>
         <p class="reveal" style="--i:2">Na rozdíl od k-NN se MLP (vícevrstvý perceptron) učí vážit, které z 2048 featur rozhodují — proto baseline výrazně překoná.</p>
         <svg class="svgbox reveal" style="--i:3;max-width:380px;margin-top:1rem" viewBox="0 0 360 160">
@@ -743,6 +796,7 @@ go(0);
 for k, v in vals.items():
     HTML = HTML.replace("__" + k + "__", v)
 HTML = HTML.replace("__PCA__", PCA_B64).replace("__ROC__", ROC_B64).replace("__PROBE__", PROBE_B64)
+HTML = HTML.replace("__CONV_SVG__", conv_anim_svg())
 HTML = HTML.replace("__CELL_INF__", CELL_INF).replace("__CELL_OK__", CELL_OK)
 
 with open("prezentace.html", "w", encoding="utf-8") as f:
