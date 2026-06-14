@@ -575,7 +575,7 @@ strong{color:#fff;font-weight:600}
         <div class="arrow">→</div>
         <div class="node acc">2048 čísel<small>featury</small></div>
         <div class="arrow">→</div>
-        <div class="node">klasifikátor<small>k-NN / MLP</small></div>
+        <div class="node">klasifikátor</div>
         <div class="arrow">→</div>
         <div class="node">zdravá /<br>napadená</div>
       </div>
