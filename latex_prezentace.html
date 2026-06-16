@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LaTeX — sazba vědeckých textů</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090c12; --bg2:#0d131d; --ink:#eaf0f7; --muted:#93a1b3;
+  --teal:#35d6c0; --teal-d:#1ea08f; --crimson:#f0476b; --line:rgba(149,167,182,.16);
+  --serif:"Fraunces",Georgia,serif; --sans:"IBM Plex Sans",sans-serif; --mono:"IBM Plex Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--sans);
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+/* atmosféra: záře + zrno */
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+.bg .glow{position:absolute;border-radius:50%;filter:blur(120px);opacity:.5}
+.bg .g1{width:60vw;height:60vw;top:-22vw;left:-14vw;background:radial-gradient(circle,rgba(53,214,192,.20),transparent 70%)}
+.bg .g2{width:55vw;height:55vw;bottom:-24vw;right:-12vw;background:radial-gradient(circle,rgba(240,71,107,.18),transparent 70%)}
+.bg .grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.deck{position:relative;z-index:1;height:100%}
+.slide{
+  position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+  padding:clamp(28px,6vw,96px); opacity:0; transform:translateY(24px) scale(.992);
+  transition:opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); pointer-events:none;
+}
+.slide.active{opacity:1;transform:none;pointer-events:auto}
+.wrap{width:100%;max-width:1180px;margin:0 auto}
+
+.kicker{font-family:var(--mono);font-size:.74rem;letter-spacing:.32em;text-transform:uppercase;
+  color:var(--teal);display:flex;align-items:center;gap:.7em;margin-bottom:1.4rem}
+.kicker::before{content:"";width:34px;height:1px;background:var(--teal);opacity:.7}
+
+h1{font-family:var(--serif);font-weight:900;line-height:1.02;letter-spacing:-.02em;
+  font-size:clamp(2.4rem,6.4vw,5.4rem)}
+h2{font-family:var(--serif);font-weight:600;line-height:1.05;letter-spacing:-.015em;
+  font-size:clamp(1.9rem,4.6vw,3.4rem);margin-bottom:1.1rem}
+h3{font-family:var(--serif);font-weight:600;font-size:1.45rem;margin-bottom:.5rem}
+p{color:#c7d2de;font-size:clamp(1rem,1.5vw,1.18rem);line-height:1.6;max-width:64ch}
+.lead{font-size:clamp(1.1rem,1.9vw,1.45rem);color:#d7e0ea}
+strong{color:#fff;font-weight:600}
+.tt{font-family:var(--mono)}
+.teal{color:var(--teal)} .crim{color:var(--crimson)}
+em{color:#dbe4ee;font-style:italic}
+
+/* reveal stagger */
+.reveal{opacity:0;transform:translateY(16px);transition:.6s cubic-bezier(.2,.7,.2,1)}
+.slide.active .reveal{opacity:1;transform:none}
+.slide.active .reveal{transition-delay:calc(var(--i,0) * 80ms + 100ms)}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.6rem}
+.chip{font-family:var(--mono);font-size:.8rem;border:1px solid var(--line);border-radius:999px;
+  padding:.5em 1em;color:var(--muted);background:rgba(255,255,255,.02)}
+.chip b{color:var(--ink);font-weight:500}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,48px);align-items:center}
+.grid2.tilt{grid-template-columns:1.05fr .95fr}
+@media(max-width:860px){.grid2{grid-template-columns:1fr;gap:24px}}
+
+.bignum{font-family:var(--serif);font-weight:900;font-size:clamp(3rem,8vw,6.4rem);
+  line-height:.9;white-space:nowrap;background:linear-gradient(180deg,#fff,var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent}
+.list{list-style:none;display:flex;flex-direction:column;gap:.7rem;margin-top:1.1rem}
+.list li{display:flex;gap:.8rem;align-items:flex-start;color:#cdd8e3;font-size:1.04rem;line-height:1.45}
+.list li::before{content:"";flex:none;width:9px;height:9px;margin-top:.5em;border-radius:50%;
+  background:var(--teal);box-shadow:0 0 0 4px rgba(53,214,192,.14)}
+.list.crimdot li::before{background:var(--crimson);box-shadow:0 0 0 4px rgba(240,71,107,.14)}
+
+.card{border:1px solid var(--line);border-radius:18px;padding:clamp(16px,2.2vw,28px);
+  background:linear-gradient(160deg,rgba(255,255,255,.035),rgba(255,255,255,.01))}
+.card.acc{border-color:rgba(53,214,192,.5);box-shadow:0 0 40px rgba(53,214,192,.08)}
+.card .list li{font-size:1rem}
+.cap{font-family:var(--mono);font-size:.72rem;color:var(--muted);text-align:center;margin-top:.55rem}
+
+/* kód LaTeX (zdroj) */
+.code{font-family:var(--mono);font-size:clamp(.74rem,1.04vw,.95rem);line-height:1.7;
+  background:#070b12;border:1px solid var(--line);border-radius:14px;
+  padding:1rem 1.2rem;white-space:pre;overflow:auto;color:#c2cdda;tab-size:2}
+.code .cmd{color:var(--teal)}
+.code .com{color:#6f7d8e;font-style:italic}
+.code .env{color:#8ab6ff}
+.code .mth{color:#f0b441}
+.codecap{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.5rem;display:flex;align-items:center;gap:.5em}
+.codecap::before{content:"";width:20px;height:1px;background:var(--muted)}
+
+/* výstup = "papír" (PDF) */
+.paper{background:#f4f2ea;color:#16181c;border:1px solid var(--line);border-radius:14px;
+  padding:1.15rem 1.4rem;font-family:var(--serif);line-height:1.55}
+.paper h4{font-family:var(--serif);font-weight:600;font-size:1.15rem;margin:0 0 .4rem;color:#16181c}
+.paper p{color:#23262b;font-size:1rem;max-width:none;margin:0}
+.paper p + p{margin-top:.7rem}
+.paper .pcap{color:#555;font-style:italic;font-size:.86rem;margin-top:.55rem}
+.paper .pnum{color:#444}
+.papercap{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:.5rem;display:flex;align-items:center;gap:.5em}
+.papercap::before{content:"";width:20px;height:1px;background:var(--muted)}
+.paper.dark{background:#0d131d;color:var(--ink);border-color:var(--line)}
+.paper.dark p{color:#cdd8e3}
+
+/* zlomek pro vysázenou matematiku */
+.frac{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 .15em;font-size:.92em}
+.frac .num{border-bottom:1.4px solid currentColor;padding:0 .35em}
+.frac .den{padding:0 .35em}
+
+/* booktabs tabulka ve výstupu */
+.btab{border-collapse:collapse;font-family:var(--serif);font-size:.96rem;color:#16181c;width:100%}
+.btab th,.btab td{padding:.36em .7em;text-align:center;white-space:nowrap}
+.btab th:first-child,.btab td:first-child{text-align:left}
+.btab thead th{border-top:2px solid #16181c;border-bottom:1px solid #16181c;font-weight:600}
+.btab tbody tr:last-child td{border-bottom:2px solid #16181c}
+
+/* pipeline */
+.pipe{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:1.4rem}
+.node{border:1px solid var(--line);border-radius:14px;padding:.85rem 1.05rem;background:rgba(255,255,255,.03);
+  font-family:var(--mono);font-size:.9rem;text-align:center;min-width:96px}
+.node small{display:block;color:var(--muted);font-size:.7rem;margin-top:.25rem}
+.node.acc{border-color:rgba(53,214,192,.5);box-shadow:0 0 28px rgba(53,214,192,.10)}
+.arrow{color:var(--teal);font-size:1.3rem}
+
+/* dvouzónový diagram preambule / tělo */
+.zonewrap{display:flex;flex-direction:column;gap:.5rem;margin-top:.4rem}
+.zonetag{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+  padding:.3em .8em;border-radius:999px;display:inline-flex;align-items:center;gap:.5em;width:max-content}
+.zonetag.pre{color:var(--teal);background:rgba(53,214,192,.1);border:1px solid rgba(53,214,192,.3)}
+.zonetag.body{color:var(--crimson);background:rgba(240,71,107,.1);border:1px solid rgba(240,71,107,.3)}
+
+/* mapování struktur (IMRaD ↔ článek) */
+.maprow{display:grid;grid-template-columns:1fr auto 1.25fr;gap:1rem;align-items:center;
+  padding:.5rem .2rem;border-bottom:1px solid var(--line)}
+.maprow:last-child{border-bottom:0}
+.maprow .a{color:#cfdae6;font-size:1.02rem}
+.maprow .a b{color:#fff;font-weight:600}
+.maprow .arw{color:var(--teal);font-size:1.1rem}
+.maprow .b{font-family:var(--mono);font-size:.86rem;color:var(--ink)}
+.maprow .b small{display:block;color:var(--muted);font-size:.74rem;margin-top:.1rem}
+
+.note{margin-top:1.2rem;color:var(--muted);font-size:.98rem;max-width:72ch;
+  border-left:3px solid var(--line);padding:.4rem 0 .4rem .9rem}
+.note.te{border-color:var(--teal)}
+.foot{margin-top:1.6rem;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+
+/* HUD */
+.hud{position:fixed;z-index:5;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.06)}
+.hud .pb{height:100%;background:linear-gradient(90deg,var(--teal),var(--crimson));width:0;transition:width .45s ease}
+.counter{position:fixed;z-index:5;top:22px;right:26px;font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+.counter b{color:var(--ink)}
+.brand{position:fixed;z-index:5;top:22px;left:26px;font-family:var(--mono);font-size:.72rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--muted)}
+.dots{position:fixed;z-index:5;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:9px;max-width:80vw;flex-wrap:wrap;justify-content:center}
+.dots button{width:8px;height:8px;border-radius:50%;border:0;background:rgba(255,255,255,.18);cursor:pointer;padding:0;transition:.3s}
+.dots button.on{background:var(--teal);transform:scale(1.35)}
+.hint{position:fixed;z-index:5;bottom:16px;right:26px;font-family:var(--mono);font-size:.72rem;color:var(--muted);opacity:.7}
+</style>
+</head>
+<body>
+<div class="bg"><div class="glow g1"></div><div class="glow g2"></div><div class="grain"></div></div>
+<div class="brand">LaTeX · FJFI&nbsp;ČVUT</div>
+<div class="counter"><b id="cur">1</b> / <span id="tot">18</span></div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 TITUL -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">FJFI ČVUT · sazba vědeckých textů</div>
+      <h1 class="reveal" style="--i:1">LaTeX<br>od první stránky k <span class="teal">hotovému článku</span></h1>
+      <p class="lead reveal" style="--i:2;margin-top:1.2rem">Jak se píšou krásné vědecké texty — co LaTeX je, jak se strukturuje dokument, základní příkazy a z čeho se skládá vědecký článek.</p>
+      <div class="chips reveal" style="--i:3">
+        <span class="chip"><b>Co je LaTeX</b></span>
+        <span class="chip"><b>Struktura dokumentu</b></span>
+        <span class="chip"><b>Základní příkazy</b></span>
+        <span class="chip"><b>Anatomie článku</b></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 CO JE LATEX -->
+  <section class="slide">
+    <div class="wrap grid2 tilt">
+      <div>
+        <div class="kicker reveal" style="--i:0">Co to je</div>
+        <h2 class="reveal" style="--i:1">LaTeX je <span class="teal">sázecí systém</span>, ne textový editor</h2>
+        <p class="reveal" style="--i:2">Ve Wordu vidíš rovnou výsledek a formátuješ myší. V&nbsp;LaTeXu napíšeš <strong>text a k&nbsp;němu značky</strong> — co je nadpis, co rovnice, co citace — a program z&nbsp;toho vysází hotové PDF.</p>
+        <div class="note te reveal" style="--i:3"><strong>WYSIWYM</strong> — „what you see is what you <em>mean</em>": staráš se o&nbsp;<strong>význam</strong>, vzhled řeší LaTeX za tebe.</div>
+      </div>
+      <div class="card acc reveal" style="--i:3">
+        <h3>Proč zrovna LaTeX?</h3>
+        <ul class="list">
+          <li><span>Dokonalá sazba <strong>matematiky</strong> a&nbsp;rovnic.</span></li>
+          <li><span><strong>Konzistence</strong> — nadpisy, číslování a&nbsp;styl bez ruční práce.</span></li>
+          <li><span>Automatické <strong>reference a&nbsp;citace</strong>, které se samy přečíslují.</span></li>
+          <li><span>Oddělení <strong>obsahu od vzhledu</strong> — stejný text, jiná šablona časopisu.</span></li>
+        </ul>
+        <p style="margin-top:.9rem;color:var(--muted);font-size:.92rem">Standard ve fyzice, matematice, informatice — i&nbsp;tato prezentace vznikla vedle reálného článku.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 WORD vs LATEX -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Dva přístupy</div>
+      <h2 class="reveal" style="--i:1">Word vs. LaTeX</h2>
+      <div class="grid2" style="margin-top:.4rem">
+        <div class="card reveal" style="--i:2">
+          <h3>Word / Google Docs</h3>
+          <ul class="list crimdot">
+            <li><span><strong>Vidíš, co píšeš</strong> — formátuješ myší a&nbsp;klikáním.</span></li>
+            <li><span>U&nbsp;dlouhých dokumentů se styl snadno <strong>rozjede</strong>.</span></li>
+            <li><span>Rovnice a&nbsp;číslování řešíš <strong>ručně</strong>.</span></li>
+          </ul>
+        </div>
+        <div class="card acc reveal" style="--i:3">
+          <h3 class="teal">LaTeX</h3>
+          <ul class="list">
+            <li><span>Píšeš <strong>obsah + značky</strong>, kompilátor vysází.</span></li>
+            <li><span>Styl je <strong>konzistentní</strong> napříč celým dokumentem.</span></li>
+            <li><span>Rovnice, čísla a&nbsp;odkazy <strong>spravuje program</strong>.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="note reveal" style="--i:4">Je to jako <strong>programování</strong>: napíšeš zdrojový text&nbsp;<span class="tt">.tex</span> → zkompiluješ → dostaneš výstup&nbsp;<span class="tt">.pdf</span>.</div>
+    </div>
+  </section>
+
+  <!-- 4 JAK TO FUNGUJE -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Jak to funguje</div>
+      <h2 class="reveal" style="--i:1">Od zdroje k&nbsp;PDF: kompilace</h2>
+      <p class="reveal" style="--i:2">Napíšeš obyčejný textový soubor <span class="tt">.tex</span>. Program (<strong>pdfLaTeX</strong>) ho přečte, vyřeší všechny příkazy a&nbsp;vysází hotové <span class="tt">.pdf</span>.</p>
+      <div class="pipe reveal" style="--i:3">
+        <div class="node">dokument<strong>.tex</strong><small>zdroj — text + příkazy</small></div>
+        <div class="arrow">→</div>
+        <div class="node acc">pdfLaTeX<small>kompilace</small></div>
+        <div class="arrow">→</div>
+        <div class="node">dokument<strong>.pdf</strong><small>hotová sazba</small></div>
+      </div>
+      <div class="note reveal" style="--i:4">Při kompilaci vzniknou i&nbsp;pomocné soubory: <span class="tt">.aux</span> (čísla pro odkazy), <span class="tt">.log</span> (záznam a&nbsp;chyby). Když používáš citace, cyklus je delší — <span class="tt">pdflatex → bibtex → pdflatex → pdflatex</span>.</div>
+    </div>
+  </section>
+
+  <!-- 5 KDE PSÁT -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Kde psát</div>
+      <h2 class="reveal" style="--i:1">Overleaf, nebo lokálně?</h2>
+      <div class="grid2" style="margin-top:.4rem">
+        <div class="card acc reveal" style="--i:2">
+          <h3 class="teal">Overleaf <span class="tt" style="font-size:.85rem;color:var(--muted)">overleaf.com</span></h3>
+          <ul class="list">
+            <li><span><strong>Nic neinstaluješ</strong> — píšeš v&nbsp;prohlížeči.</span></li>
+            <li><span>Kompiluje samo, hned vidíš PDF vedle textu.</span></li>
+            <li><span>Snadná <strong>spolupráce</strong> více lidí na jednom projektu.</span></li>
+          </ul>
+          <p style="margin-top:.8rem;color:var(--teal);font-size:.95rem">★ Pro začátečníky doporučeno.</p>
+        </div>
+        <div class="card reveal" style="--i:3">
+          <h3>Lokální instalace</h3>
+          <ul class="list">
+            <li><span>Distribuce <strong>TeX Live</strong> (Win/Linux/Mac) nebo <strong>MiKTeX</strong> (Win).</span></li>
+            <li><span>Editor: <strong>TeXstudio</strong>, VS&nbsp;Code + LaTeX&nbsp;Workshop.</span></li>
+            <li><span>Plná kontrola, funguje <strong>offline</strong> — ale je třeba nastavit.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="note te reveal" style="--i:4">Pro tuhle prezentaci stačí <strong>Overleaf</strong>: založ projekt, vlož <span class="tt">main.tex</span> a&nbsp;klikni „Recompile".</div>
+    </div>
+  </section>
+
+  <!-- 6 STRUKTURA DOKUMENTU -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Struktura dokumentu</div>
+      <h2 class="reveal" style="--i:1">Každý dokument má dvě části</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">minimální funkční dokument</div>
+<div class="code"><span class="com">% --- PREAMBULE: nastavení dokumentu ---</span>
+<span class="cmd">\documentclass</span>[11pt]{article}
+<span class="cmd">\usepackage</span>[utf8]{inputenc}  <span class="com">% kódování</span>
+<span class="cmd">\usepackage</span>[czech]{babel}    <span class="com">% čeština</span>
+
+<span class="com">% --- TĚLO: vlastní obsah ---</span>
+<span class="cmd">\begin</span>{<span class="env">document</span>}
+Ahoj, světe!
+<span class="cmd">\end</span>{<span class="env">document</span>}</div>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="zonewrap">
+            <span class="zonetag pre">Preambule</span>
+            <p style="font-size:.98rem">Vše <strong>před</strong> <span class="tt">\begin{document}</span>. Říká, jaký je to typ dokumentu (<span class="tt">\documentclass</span>) a&nbsp;jaké balíčky se použijí.</p>
+            <span class="zonetag body" style="margin-top:.6rem">Tělo</span>
+            <p style="font-size:.98rem">Mezi <span class="tt">\begin{document}</span> a&nbsp;<span class="tt">\end{document}</span>. Sem píšeš <strong>vlastní text</strong>, nadpisy, rovnice, obrázky.</p>
+          </div>
+          <div class="papercap" style="margin-top:1rem">výstup</div>
+          <div class="paper"><p>Ahoj, světe!</p></div>
+        </div>
+      </div>
+      <div class="note reveal" style="--i:4"><span class="tt">\documentclass</span> je vždy <strong>první řádek</strong>. Typ <span class="tt">article</span> je na článek; existují i&nbsp;<span class="tt">report</span>, <span class="tt">book</span>, <span class="tt">beamer</span> (prezentace).</div>
+    </div>
+  </section>
+
+  <!-- 7 ANATOMIE PŘÍKAZU -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Základní příkazy</div>
+      <h2 class="reveal" style="--i:1">Anatomie příkazu</h2>
+      <p class="reveal" style="--i:2">Příkaz začíná <strong>zpětným lomítkem</strong>. Ve složených závorkách <span class="tt">{ }</span> je <strong>povinný</strong> argument, v&nbsp;hranatých <span class="tt">[ ]</span> <strong>nepovinné</strong> volby.</p>
+      <div class="reveal" style="--i:3" style="margin-top:.5rem">
+        <div class="codecap" style="margin-top:1rem">tvar příkazu</div>
+<div class="code"><span class="cmd">\textbf</span>{tučně}                       <span class="com">% příkaz s jedním argumentem</span>
+<span class="cmd">\section</span>{Úvod}                       <span class="com">% nadpis sekce</span>
+<span class="cmd">\includegraphics</span>[width=5cm]{a.png}   <span class="com">% [volby] + {argument}</span>
+
+<span class="cmd">\begin</span>{<span class="env">itemize</span>}                    <span class="com">% PROSTŘEDÍ = párový blok</span>
+  <span class="cmd">\item</span> první bod
+  <span class="cmd">\item</span> druhý bod
+<span class="cmd">\end</span>{<span class="env">itemize</span>}</div>
+      </div>
+      <ul class="list reveal" style="--i:4;margin-top:1.1rem">
+        <li><span><span class="tt">\příkaz{...}</span> — jednorázová akce (tučné písmo, nadpis…).</span></li>
+        <li><span><span class="tt">\begin{název}…\end{název}</span> — <strong>prostředí</strong>: blok, který se chová jinak (seznam, rovnice, obrázek).</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 8 FORMÁTOVÁNÍ TEXTU -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Základní příkazy</div>
+      <h2 class="reveal" style="--i:1">Formátování textu</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">zdroj .tex</div>
+<div class="code">Text <span class="cmd">\textbf</span>{tučně}, <span class="cmd">\emph</span>{kurzívou},
+<span class="cmd">\texttt</span>{strojopisem}.
+
+Nový odstavec vznikne <span class="cmd">\\</span> prázdným řádkem.
+
+Uvozovky: <span class="cmd">\uv</span>{takhle}.
+Spojovník-, pomlčka&nbsp;--- a~rozsah 10--20.
+<span class="com">% tohle je komentář — do PDF se nedostane</span></div>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <p>Text <strong>tučně</strong>, <em>kurzívou</em>, <span style="font-family:var(--mono)">strojopisem</span>.</p>
+            <p>Nový odstavec vznikne prázdným řádkem.</p>
+            <p>Uvozovky: „takhle". Spojovník-, pomlčka&nbsp;— a&nbsp;rozsah 10–20.</p>
+          </div>
+        </div>
+      </div>
+      <div class="note reveal" style="--i:4">Pozor na <strong>speciální znaky</strong> <span class="tt">% &amp; _ # $</span> — mají v&nbsp;LaTeXu význam, takže když je chceš vytisknout, napiš je s&nbsp;lomítkem: <span class="tt">\% \&amp; \_ \#</span>.</div>
+    </div>
+  </section>
+
+  <!-- 9 ČLENĚNÍ -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Struktura dokumentu</div>
+      <h2 class="reveal" style="--i:1">Členění na sekce</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">zdroj .tex</div>
+<div class="code"><span class="cmd">\tableofcontents</span>          <span class="com">% obsah se vygeneruje sám</span>
+
+<span class="cmd">\section</span>{Úvod a vymezení problému}
+<span class="cmd">\section</span>{Data}
+<span class="cmd">\section</span>{Metoda}
+  <span class="cmd">\subsection</span>{Extrakce příznaků}
+  <span class="cmd">\subsection</span>{Klasifikace k-NN}
+<span class="cmd">\section</span>{Vyhodnocení}</div>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <p><span class="pnum">1</span>&nbsp;&nbsp;Úvod a vymezení problému</p>
+            <p><span class="pnum">2</span>&nbsp;&nbsp;Data</p>
+            <p><span class="pnum">3</span>&nbsp;&nbsp;Metoda</p>
+            <p style="padding-left:1.2em"><span class="pnum">3.1</span>&nbsp;&nbsp;Extrakce příznaků</p>
+            <p style="padding-left:1.2em"><span class="pnum">3.2</span>&nbsp;&nbsp;Klasifikace k-NN</p>
+            <p><span class="pnum">4</span>&nbsp;&nbsp;Vyhodnocení</p>
+          </div>
+        </div>
+      </div>
+      <div class="note te reveal" style="--i:4"><strong>Čísla a obsah se generují samy.</strong> Přidáš sekci doprostřed a&nbsp;vše ostatní se automaticky přečísluje — žádné ruční opravování. (Úrovně: <span class="tt">\section → \subsection → \subsubsection</span>.)</div>
+    </div>
+  </section>
+
+  <!-- 10 MATEMATIKA -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Matematický režim</div>
+      <h2 class="reveal" style="--i:1">Sazba matematiky — chlouba LaTeXu</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">zdroj .tex</div>
+<div class="code">Senzitivita v~textu: <span class="mth">$\frac{TP}{TP+FN}$</span>.
+
+<span class="cmd">\begin</span>{<span class="env">equation</span>}
+  \mathrm{senzitivita} = \frac{TP}{TP+FN},
+  \quad
+  \mathrm{specificita} = \frac{TN}{TN+FP}
+<span class="cmd">\end</span>{<span class="env">equation</span>}</div>
+          <ul class="list" style="margin-top:1rem">
+            <li><span><span class="tt">$...$</span> = matematika <strong>v textu</strong>; <span class="tt">equation</span> = <strong>na samostatném</strong> očíslovaném řádku.</span></li>
+            <li><span><span class="tt">\frac{a}{b}</span> zlomek, <span class="tt">x^2</span> exponent, <span class="tt">x_i</span> index, <span class="tt">\alpha \sum \int</span> symboly.</span></li>
+          </ul>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <p>Senzitivita v textu: <span class="frac"><span class="num">TP</span><span class="den">TP+FN</span></span>.</p>
+            <p style="margin-top:1rem;display:flex;align-items:center;justify-content:center;gap:1.6em">
+              <span>senzitivita = <span class="frac"><span class="num">TP</span><span class="den">TP+FN</span></span>,</span>
+              <span>specificita = <span class="frac"><span class="num">TN</span><span class="den">TN+FP</span></span></span>
+              <span style="margin-left:auto" class="pnum">(1)</span>
+            </p>
+          </div>
+          <p class="cap">Přesně tahle rovnice je v&nbsp;Sekci 4 vašeho článku.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 OBRÁZKY -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Obrázky</div>
+      <h2 class="reveal" style="--i:1">Vkládání obrázků</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">zdroj .tex</div>
+<div class="code"><span class="cmd">\begin</span>{<span class="env">figure</span>}[t]
+  <span class="cmd">\centering</span>
+  <span class="cmd">\includegraphics</span>[width=0.55<span class="cmd">\linewidth</span>]%
+                  {figs/confusion_baseline.png}
+  <span class="cmd">\caption</span>{Matice záměn k-NN baseline.}
+  <span class="cmd">\label</span>{fig:confusion}
+<span class="cmd">\end</span>{<span class="env">figure</span>}</div>
+          <ul class="list" style="margin-top:1rem">
+            <li><span><span class="tt">figure</span> je <strong>plovoucí</strong> ([t] = umísti nahoru na stránku).</span></li>
+            <li><span><span class="tt">\includegraphics</span> vloží soubor, <span class="tt">width</span> nastaví šířku.</span></li>
+            <li><span><span class="tt">\caption</span> = popisek (číslo přidá LaTeX), <span class="tt">\label</span> = jmenovka pro odkaz.</span></li>
+          </ul>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <img src="figs/confusion_baseline.png" alt="Matice záměn" style="display:block;width:80%;margin:0 auto;border-radius:6px">
+            <p class="pcap"><strong>Obrázek 1:</strong> Matice záměn k-NN baseline.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12 TABULKY -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Tabulky</div>
+      <h2 class="reveal" style="--i:1">Tabulky se sázejí po sloupcích</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">zdroj .tex</div>
+<div class="code"><span class="cmd">\begin</span>{<span class="env">tabular</span>}{lccc}
+  <span class="cmd">\toprule</span>
+  Metoda &amp; Přesnost &amp; Senzitivita &amp; AUC <span class="cmd">\\</span>
+  <span class="cmd">\midrule</span>
+  ResNet50 + k-NN &amp; 0,77 &amp; 0,56 &amp; 0,93 <span class="cmd">\\</span>
+  Vaše řešení     &amp; --   &amp; --   &amp; --   <span class="cmd">\\</span>
+  <span class="cmd">\bottomrule</span>
+<span class="cmd">\end</span>{<span class="env">tabular</span>}</div>
+          <ul class="list" style="margin-top:1rem">
+            <li><span><span class="tt">{lccc}</span> = 4 sloupce: <strong>l</strong>=vlevo, <strong>c</strong>=na střed, <strong>r</strong>=vpravo.</span></li>
+            <li><span><span class="tt">&amp;</span> oddělí buňky, <span class="tt">\\</span> ukončí řádek.</span></li>
+            <li><span>Balíček <strong>booktabs</strong> dává <span class="tt">\toprule/\midrule/\bottomrule</span> — žádné svislé čáry, hezčí výsledek.</span></li>
+          </ul>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <table class="btab">
+              <thead><tr><th>Metoda</th><th>Přesnost</th><th>Senzitivita</th><th>AUC</th></tr></thead>
+              <tbody>
+                <tr><td>ResNet50 + k-NN</td><td>0,77</td><td>0,56</td><td>0,93</td></tr>
+                <tr><td>Vaše řešení</td><td>—</td><td>—</td><td>—</td></tr>
+              </tbody>
+            </table>
+            <p class="pcap"><strong>Tabulka 1:</strong> Výsledky na testovací sadě.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 13 KŘÍŽOVÉ ODKAZY -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Křížové odkazy</div>
+      <h2 class="reveal" style="--i:1">Odkazuj jménem, ne číslem</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">zdroj .tex</div>
+<div class="code"><span class="cmd">\section</span>{Vyhodnocení}<span class="cmd">\label</span>{sec:vyh}
+
+Výsledky shrnuje <span class="cmd">\cref</span>{tab:vysledky},
+matici záměn ukazuje <span class="cmd">\cref</span>{fig:confusion}.
+Postup popisuje <span class="cmd">\cref</span>{sec:vyh}.</div>
+          <ul class="list" style="margin-top:1rem">
+            <li><span>Dej <span class="tt">\label{klíč}</span> k&nbsp;sekci, obrázku, tabulce či rovnici.</span></li>
+            <li><span>Odkazuj <span class="tt">\ref{klíč}</span> (jen číslo) nebo <span class="tt">\cref{klíč}</span> (i&nbsp;slovo „obrázek").</span></li>
+          </ul>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <p>Výsledky shrnuje tabulka&nbsp;1, matici záměn ukazuje obrázek&nbsp;1. Postup popisuje sekce&nbsp;4.</p>
+          </div>
+          <div class="note te" style="margin-top:1rem">Čísla se <strong>dosadí a přečíslují sama</strong>. Nikdy nepiš „viz tabulka 1" ručně — po přesunu by seděla na špatné místo.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 CITACE / BIBTEX -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Citace a literatura</div>
+      <h2 class="reveal" style="--i:1">Literatura přes BibTeX</h2>
+      <div class="grid2" style="margin-top:.4rem;align-items:start">
+        <div class="reveal" style="--i:2">
+          <div class="codecap">refs.bib — databáze zdrojů</div>
+<div class="code"><span class="cmd">@inproceedings</span>{he2016,
+  author = {He, Kaiming and others},
+  title  = {Deep Residual Learning...},
+  booktitle = {CVPR}, year = {2016}
+}</div>
+          <div class="codecap" style="margin-top:1rem">main.tex — citování a seznam</div>
+<div class="code">...síť ResNet50~<span class="cmd">\cite</span>{he2016}...
+
+<span class="cmd">\bibliographystyle</span>{unsrt}
+<span class="cmd">\bibliography</span>{refs}</div>
+        </div>
+        <div class="reveal" style="--i:3">
+          <div class="papercap">výstup (PDF)</div>
+          <div class="paper">
+            <p>...síť ResNet50&nbsp;[1]...</p>
+            <p style="margin-top:1rem;font-weight:600">Literatura</p>
+            <p style="font-size:.9rem">[1]&nbsp;&nbsp;K.&nbsp;He et&nbsp;al. Deep Residual Learning for Image Recognition. <em>CVPR</em>, 2016.</p>
+          </div>
+          <ul class="list" style="margin-top:1rem">
+            <li><span>Zdroje drž v&nbsp;<span class="tt">refs.bib</span> (klíč + údaje), <span class="tt">\cite{klíč}</span> vloží číslo.</span></li>
+            <li><span>Styl <span class="tt">unsrt</span> = číslováno v&nbsp;pořadí citování. Kompilace: <span class="tt">pdflatex → bibtex → pdflatex ×2</span> (Overleaf sám).</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 BALÍČKY -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Balíčky</div>
+      <h2 class="reveal" style="--i:1">Balíčky rozšiřují LaTeX</h2>
+      <p class="reveal" style="--i:2">Balíček (<span class="tt">package</span>) = sada hotových příkazů. Přidáš ho do preambule pomocí <span class="tt">\usepackage{...}</span>. Tady je <strong>reálná preambule vašeho článku</strong>:</p>
+      <div class="reveal" style="--i:3">
+        <div class="codecap" style="margin-top:1rem">main.tex — preambule</div>
+<div class="code"><span class="cmd">\usepackage</span>[czech]{babel}            <span class="com">% české dělení slov a uvozovky</span>
+<span class="cmd">\usepackage</span>{amsmath}                 <span class="com">% pokročilá sazba matematiky</span>
+<span class="cmd">\usepackage</span>{graphicx}                <span class="com">% vkládání obrázků</span>
+<span class="cmd">\usepackage</span>{booktabs}                <span class="com">% pěkné čáry v tabulkách</span>
+<span class="cmd">\usepackage</span>{siunitx}                 <span class="com">% zarovnání čísel, jednotky</span>
+<span class="cmd">\usepackage</span>[colorlinks]{hyperref}    <span class="com">% klikací odkazy v PDF</span>
+<span class="cmd">\usepackage</span>{cleveref}                <span class="com">% chytré odkazy (\cref)</span></div>
+      </div>
+      <div class="note te reveal" style="--i:4">Existují <strong>tisíce balíčků</strong> (archiv CTAN). Pro češtinu nezapomeň na trojici <span class="tt">inputenc</span> + <span class="tt">fontenc</span> + <span class="tt">babel</span>.</div>
+    </div>
+  </section>
+
+  <!-- 16 STRUKTURA VĚDECKÉHO ČLÁNKU -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Struktura vědeckého článku</div>
+      <h2 class="reveal" style="--i:1">Anatomie článku — <span class="teal">IMRaD</span></h2>
+      <p class="reveal" style="--i:2">Vědecké články mají ustálenou kostru. Jádro se zkráceně značí <strong>IMRaD</strong>: <em>Introduction, Methods, Results, and Discussion</em>.</p>
+      <div class="grid2" style="margin-top:.8rem;align-items:start">
+        <ul class="list reveal" style="--i:3">
+          <li><span><strong>Název + autoři</strong> — o čem to je a kdo to napsal.</span></li>
+          <li><span><strong>Abstrakt</strong> — celý článek v ~150 slovech: problém, metoda, hlavní výsledek.</span></li>
+          <li><span><strong>Úvod</strong> (Introduction) — proč problém, co se ví, co přinášíme.</span></li>
+          <li><span><strong>Metody</strong> (Methods) — co a jak jsme udělali, aby to šlo <em>zopakovat</em>.</span></li>
+        </ul>
+        <ul class="list reveal" style="--i:4">
+          <li><span><strong>Výsledky</strong> (Results) — co vyšlo: tabulky, grafy — bez hodnocení.</span></li>
+          <li><span><strong>Diskuse</strong> (Discussion) — co to znamená, limity, srovnání.</span></li>
+          <li><span><strong>Závěr</strong> (Conclusion) — hlavní zjištění v kostce.</span></li>
+          <li><span><strong>Literatura</strong> (References) — na co navazujeme.</span></li>
+        </ul>
+      </div>
+      <div class="note reveal" style="--i:5">Pořadí, v&nbsp;jakém čtenář <strong>získá důvěru</strong>: nejdřív <em>proč</em> (úvod), pak <em>jak</em> (metody), <em>co</em> (výsledky) a&nbsp;teprve potom <em>co z toho plyne</em> (diskuse).</div>
+    </div>
+  </section>
+
+  <!-- 17 IMRaD NA VAŠEM ČLÁNKU -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Struktura vědeckého článku</div>
+      <h2 class="reveal" style="--i:1">IMRaD na <span class="teal">vašem</span> článku</h2>
+      <p class="reveal" style="--i:2">Obecná kostra vlevo, vaše reálné sekce v&nbsp;<span class="tt">main.tex</span> vpravo — váš projekt už ji má celou.</p>
+      <div style="margin-top:.8rem">
+        <div class="maprow reveal" style="--i:3"><div class="a"><b>Abstrakt</b></div><div class="arw">→</div><div class="b">\begin{abstract}<small>„≈ 600 000 úmrtí ročně…"</small></div></div>
+        <div class="maprow reveal" style="--i:3"><div class="a"><b>Úvod</b></div><div class="arw">→</div><div class="b">\section{Úvod a vymezení problému}</div></div>
+        <div class="maprow reveal" style="--i:4"><div class="a"><b>Metody</b></div><div class="arw">→</div><div class="b">\section{Data} + \section{Metoda}<small>ResNet50 + k-NN</small></div></div>
+        <div class="maprow reveal" style="--i:4"><div class="a"><b>Výsledky</b></div><div class="arw">→</div><div class="b">\section{Vyhodnocení}<small>tabulka 1, ROC křivka</small></div></div>
+        <div class="maprow reveal" style="--i:5"><div class="a"><b>Diskuse</b></div><div class="arw">→</div><div class="b">\section{Diskuse}<small>prokletí dimenzionality</small></div></div>
+        <div class="maprow reveal" style="--i:5"><div class="a"><b>Závěr + Literatura</b></div><div class="arw">→</div><div class="b">\section{Závěr} · \bibliography{refs}</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 18 TIPY A CHYBY -->
+  <section class="slide">
+    <div class="wrap">
+      <div class="kicker reveal" style="--i:0">Na závěr</div>
+      <h2 class="reveal" style="--i:1">Časté chyby &amp; kam dál</h2>
+      <div class="grid2" style="margin-top:.4rem">
+        <div class="card reveal" style="--i:2">
+          <h3 class="crim">Časté chyby</h3>
+          <ul class="list crimdot">
+            <li><span>Zapomenutá <span class="tt">}</span> nebo <span class="tt">$</span> → kryptická chyba; hledej kousek <strong>nad</strong> ní.</span></li>
+            <li><span>Speciální znaky <span class="tt">% &amp; _ #</span> piš s&nbsp;lomítkem.</span></li>
+            <li><span><strong>Kompiluj často</strong> — chybu pak najdeš snáz.</span></li>
+            <li><span>Čti <strong>první</strong> chybu v&nbsp;<span class="tt">.log</span>, ne tu poslední.</span></li>
+          </ul>
+        </div>
+        <div class="card acc reveal" style="--i:3">
+          <h3 class="teal">Kam dál</h3>
+          <ul class="list">
+            <li><span><strong>Overleaf</strong> (overleaf.com) — piš hned v&nbsp;prohlížeči.</span></li>
+            <li><span><strong>Detexify</strong> — nakresli symbol, najde ti příkaz.</span></li>
+            <li><span><strong>Overleaf Learn</strong> a&nbsp;LaTeX Wikibook — návody krok za krokem.</span></li>
+            <li><span>Otevři si <span class="tt">main.tex</span> z&nbsp;tohoto projektu a&nbsp;zkoušej.</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="note te reveal" style="--i:4">Nejlíp se LaTeX naučíš tak, že <strong>upravuješ hotový dokument</strong>. Máš ho po ruce — váš článek o&nbsp;malárii.</div>
+    </div>
+  </section>
+
+</div>
+
+<div class="dots" id="dots"></div>
+<div class="hint">← →  /  mezerník</div>
+<div class="hud"><div class="pb" id="pb"></div></div>
+
+<script>
+const slides=[...document.querySelectorAll('.slide')];
+const dots=document.getElementById('dots');
+const pb=document.getElementById('pb'), cur=document.getElementById('cur'), tot=document.getElementById('tot');
+let i=0; tot.textContent=slides.length;
+slides.forEach((_,k)=>{const b=document.createElement('button');b.onclick=()=>go(k);dots.appendChild(b);});
+const dotEls=[...dots.children];
+function go(n){
+  i=Math.max(0,Math.min(slides.length-1,n));
+  slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+  dotEls.forEach((d,k)=>d.classList.toggle('on',k===i));
+  pb.style.width=((i+1)/slides.length*100)+'%';
+  cur.textContent=i+1;
+}
+function next(){go(i+1)} function prev(){go(i-1)}
+addEventListener('keydown',e=>{
+  if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)){e.preventDefault();next();}
+  else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)){e.preventDefault();prev();}
+  else if(e.key==='Home')go(0); else if(e.key==='End')go(slides.length-1);
+});
+let sx=0;
+addEventListener('touchstart',e=>sx=e.touches[0].clientX,{passive:true});
+addEventListener('touchend',e=>{const d=e.changedTouches[0].clientX-sx; if(Math.abs(d)>50)(d<0?next():prev());},{passive:true});
+go(0);
+</script>
+</body>
+</html>
